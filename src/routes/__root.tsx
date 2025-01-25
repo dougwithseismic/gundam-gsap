@@ -1,8 +1,7 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ScrambleCoordinates } from "../features/scramble-effect/scramble-coordinates";
-import { motion } from "framer-motion";
 export const Route = createRootRoute({
   component: () => <Root />,
 });
@@ -106,7 +105,8 @@ function Root() {
           </span>
         </div>
       </footer>
-      <TanStackRouterDevtools />
+
+      {/* x<TanStackRouterDevtools /> */}
     </div>
   );
 }

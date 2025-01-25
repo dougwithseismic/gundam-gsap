@@ -1,13 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { gsap } from "gsap";
-import { SplitText } from "gsap/SplitText";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useCallback, useState } from "react";
 import { GundamTagline } from "../features/animations/ws/gundam-tagline";
 import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
 import { ScrambleText } from "../features/scramble-effect/scramble-text";
 import { motion } from "framer-motion";
-
-gsap.registerPlugin(SplitText);
+import { useVideoClipper } from "../features/animations/ws/use-video-clipper";
+import YouTube, { YouTubeEvent } from "react-youtube";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -16,87 +14,28 @@ export const Route = createFileRoute("/")({
 function Index() {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   // VIDEO CLIPPER
-  useLayoutEffect(() => {
-    const tl = gsap.timeline();
+  useVideoClipper({ isVideoReady, containerRef });
 
-    const splitText = new SplitText(".sidequest-title", {
-      types: "lines",
-    });
-
-    // SET INITIALS
-    gsap.set(containerRef.current, {
-      y: "100%",
-      width: "0%",
-      height: "0%",
-    });
-
-    gsap.set(splitText.lines, {
-      opacity: 0,
-      yPercent: 100,
-    });
-
-    gsap.set("#side-video", {
-      y: "100%",
-      width: "0%",
-      height: "0%",
-      transformOrigin: "top right",
-      stagger: 0.1,
-    });
-
-    // ANIMATE
-    tl.to(containerRef.current, {
-      y: "0%",
-      duration: 1.2,
-      width: "95%",
-      height: "30%",
-      ease: "expo.inOut",
-    })
-
-      .to(
-        containerRef.current,
-        {
-          duration: 1,
-          width: "40%",
-          height: "90%",
-          ease: "expo.inOut",
-        },
-        "<60%",
-      )
-      // ANIMATE TEXT TITLES IN
-      .to(
-        splitText.lines,
-        {
-          opacity: 1,
-          stagger: 0.1,
-          yPercent: 0,
-        },
-        "<",
-      )
-
-      .to(containerRef.current, {
-        duration: 1,
-        width: "100%",
-        height: "100%",
-        ease: "expo.inOut",
-        opacity: 1,
-        mixBlendMode: "inherit",
-      })
-      .to(
-        containerRef.current,
-        {
-          duration: 1,
-          width: "100%",
-          height: "100%",
-          ease: "expo.inOut",
-          opacity: 1,
-          mixBlendMode: "luminosity",
-          transformOrigin: "center center",
-        },
-        "<",
-      );
+  const onPlayerReady = useCallback((event: YouTubeEvent) => {
+    // Access to player in all event handlers via event.target
+    event.target.playVideo();
+    event.target.mute();
+    setIsVideoReady(true);
   }, []);
+
+  const opts = {
+    playerVars: {
+      autoplay: 1,
+      controls: 0,
+      mute: 1,
+      loop: 1,
+      playlist: "bHNzEsCokLc",
+      start: 58,
+    },
+  };
 
   return (
     <div className="right-8 bottom-8 flex h-full w-full items-end justify-end">
@@ -105,12 +44,20 @@ function Index() {
         ref={containerRef}
         className="absolute top-0 left-0 flex h-0 w-0 items-center justify-center overflow-clip bg-primary-100 opacity-50 mix-blend-luminosity"
       >
-        <iframe
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 2, delay: 1 }}
           className="pointer-events-none min-h-svh min-w-svw scale-[1.2]"
-          src="https://www.youtube.com/embed/bHNzEsCokLc?autoplay=1&mute=1&controls=0&loop=1&playlist=bHNzEsCokLc&start=58"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        >
+          <YouTube
+            videoId="bHNzEsCokLc"
+            opts={opts}
+            onReady={onPlayerReady}
+            className="pointer-events-none"
+            iframeClassName="pointer-events-none min-h-svh min-w-svw scale-[1.2]"
+          />
+        </motion.div>
       </div>
 
       <div className="sidequest-text absolute bottom-8 left-8 z-10 flex max-w-lg flex-col gap-4">
