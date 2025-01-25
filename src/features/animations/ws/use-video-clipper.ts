@@ -1,8 +1,9 @@
 import { gsap } from "gsap";
 import { SplitText } from "gsap/SplitText";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLayoutEffect, useRef } from "react";
 
-gsap.registerPlugin(SplitText);
+gsap.registerPlugin(SplitText, ScrollTrigger);
 
 interface VideoClipperOptions {
   containerRef: React.RefObject<HTMLDivElement>;
@@ -76,14 +77,12 @@ export const useVideoClipper = ({
         },
         "<60%",
       )
-
       .to(containerRef.current, {
         duration: 1,
         width: "100%",
         height: "100%",
         ease: "expo.inOut",
         opacity: 1,
-        mixBlendMode: "inherit",
       })
       .to(
         containerRef.current,
@@ -93,15 +92,28 @@ export const useVideoClipper = ({
           height: "100%",
           ease: "expo.inOut",
           opacity: 1,
-          mixBlendMode: "luminosity",
           transformOrigin: "center center",
         },
         "<",
       );
 
+    // Add scroll trigger animation
+    gsap.to(containerRef.current, {
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: "top top",
+        end: "+=100",
+        scrub: true,
+      },
+      width: "80%",
+      height: "80%",
+      ease: "none",
+    });
+
     return () => {
       tl.kill();
       splitTextRef.current?.revert();
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
   }, [containerRef, titleSelector, isVideoReady]);
 };
