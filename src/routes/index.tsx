@@ -32,7 +32,7 @@ function Index() {
       controls: 0,
       mute: 1,
       loop: 1,
-      playlist: "bHNzEsCokLc",
+      playlist: "8-qzOpE3dyM",
       start: 58,
     },
   };
@@ -50,10 +50,10 @@ function Index() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 2, delay: 1 }}
-            className="mix-blend- pointer-events-none absolute inset-0 z-10 min-h-svh min-w-svw opacity-10"
+            className="pointer-events-none absolute inset-0 z-10 min-h-svh min-w-svw opacity-10 mix-blend-luminosity"
           >
             <YouTube
-              videoId="bHNzEsCokLc"
+              videoId="8-qzOpE3dyM"
               opts={opts}
               onReady={onPlayerReady}
               className="pointer-events-none"
@@ -106,7 +106,7 @@ function Index() {
 
         {/* CONTENT */}
         <div className="relative z-10 h-fit w-full max-w-xs">
-          <div className="absolute inset-0 bg-primary-400 opacity-20 mix-blend-darken"></div>
+          <div className="absolute inset-0 bg-primary-400 opacity-80 mix-blend-darken"></div>
           <div
             ref={cardRef}
             className="relative grid h-fit w-full grid-cols-12 bg-gradient-to-br from-[var(--color-primary-400/10)] to-primary-300 p-4 font-mono"
