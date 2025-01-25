@@ -79,12 +79,12 @@ function Root() {
       </header>
 
       {/* Main Content */}
-      <main className="relative flex-1 px-6 py-8">
+      <main className="absolute inset-0 overflow-y-auto pt-16 pb-14 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary-950/50 [&::-webkit-scrollbar-track]:bg-transparent">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="border-neutral-800 bg-primary px-6 py-3 font-mono">
+      <footer className="fixed right-0 bottom-0 left-0 border-neutral-800 bg-primary px-6 py-3 font-mono">
         <div className="flex items-center justify-between">
           <span className="text-text-muted">[OPERATION_METEOR: STANDBY]</span>
           <span className="text-text-muted">

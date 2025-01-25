@@ -41,14 +41,6 @@ export const useVideoClipper = ({
       yPercent: 100,
     });
 
-    gsap.set("#side-video", {
-      yPercent: "100%",
-      width: "0%",
-      height: "0%",
-      transformOrigin: "top right",
-      stagger: 0.1,
-    });
-
     // ANIMATE
     tl.to(containerRef.current, {
       yPercent: "0%",
@@ -71,7 +63,7 @@ export const useVideoClipper = ({
         containerRef.current,
         {
           duration: 1,
-          width: "40%",
+          width: "30%",
           height: "90%",
           ease: "expo.inOut",
         },
@@ -97,23 +89,9 @@ export const useVideoClipper = ({
         "<",
       );
 
-    // Add scroll trigger animation
-    gsap.to(containerRef.current, {
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top top",
-        end: "+=100",
-        scrub: true,
-      },
-      width: "80%",
-      height: "80%",
-      ease: "none",
-    });
-
     return () => {
       tl.kill();
       splitTextRef.current?.revert();
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
   }, [containerRef, titleSelector, isVideoReady]);
 };
