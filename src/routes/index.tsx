@@ -21,6 +21,7 @@ function Index() {
   const storyTextRef = useRef<HTMLDivElement>(null);
   const smoothWrapperRef = useRef<HTMLDivElement>(null);
   const smoothContentRef = useRef<HTMLDivElement>(null);
+  const hitMiddleRef = useRef(false);
 
   // Section Refs
   const sectionOneRef = useRef<HTMLDivElement>(null);
@@ -77,7 +78,7 @@ function Index() {
         start: "top top",
         end: "bottom 40%",
         scrub: true,
-        markers: true, // This will help debug the scroll trigger points
+        markers: false, // This will help debug the scroll trigger points
       },
     });
 
@@ -87,6 +88,27 @@ function Index() {
       ease: "power2.inOut",
     });
 
+    // SECTION ONE
+    const sectionOneTimeline = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionOneRef.current,
+        start: "top top",
+        end: "bottom 20%",
+        scrub: true,
+        markers: false, // This will help debug the scroll trigger points
+      },
+    });
+
+    sectionOneTimeline.to(videoContainerRef.current, {
+      width: "80%",
+      height: "60%",
+      xPercent: -50,
+      yPercent: -50,
+      left: "50%",
+      top: "50%",
+      scale: 1,
+    });
+
     //  SECTION TWO
     const sectionTwoTimeline = gsap.timeline({
       scrollTrigger: {
@@ -94,17 +116,74 @@ function Index() {
         start: "top top",
         end: "bottom 20%",
         scrub: true,
-        markers: true, // This will help debug the scroll trigger points
+        markers: false, // This will help debug the scroll trigger points
       },
     });
 
-    sectionTwoTimeline.to(videoContainerRef.current, {
-      opacity: 1,
-      duration: 1,
-      filter: "grayscale(0%)", // Fade from grayscale to color
-      ease: "power2.inOut",
+    sectionTwoTimeline
+      .to(videoContainerRef.current, {
+        width: "40%",
+        height: "30%",
+        xPercent: -50,
+        yPercent: -50,
+        left: "50%",
+        top: "50%",
+        duration: 1,
+        filter: "grayscale(100%)",
+        ease: "power2.inOut",
+        transformOrigin: "center center",
+        opacity: 0.2,
+      })
+      .to(
+        "#background-video",
+        {
+          width: "100%",
+          height: "100%",
+          scale: 1,
+        },
+        "<",
+      );
+
+    // SECTION THREE
+    const sectionThreeTimeline = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionThreeRef.current,
+        start: "top top",
+        end: "bottom 20%",
+        scrub: true,
+        markers: false,
+        onUpdate: (self) => {
+          // self.progress gives us a value between 0 and 1
+          if (self.progress >= 0.5 && !hitMiddleRef.current) {
+            // Do something when timeline is halfway
+            console.log("Timeline is halfway!");
+            sectionThreeTimeline.to(videoContainerRef.current, {
+              width: "95%",
+              height: "95%",
+              filter: "grayscale(0%)",
+              opacity: 1,
+              scale: 1,
+            });
+            hitMiddleRef.current = true;
+          } else if (self.progress < 0.5) {
+            hitMiddleRef.current = false;
+          }
+
+          // Set opacity to 1 when we reach the end
+          if (self.progress >= 1) {
+            sectionThreeTimeline.to(videoContainerRef.current, {
+              opacity: 1,
+            });
+          }
+        },
+      },
     });
 
+    sectionThreeTimeline.to(videoContainerRef.current, {
+      width: "100%",
+      height: "100%",
+      scale: 1,
+    });
     return () => {
       smoother.kill();
     };
@@ -202,12 +281,6 @@ function Index() {
               ref={storyTextRef}
               className="relative z-10 mt-auto mb-12 ml-4 flex max-w-lg flex-col gap-4"
             >
-              <div className="sidequest-title mb-4 h-fit overflow-clip">
-                EPISODE AC 195
-                <br />
-                OPERATION METEOR
-              </div>
-
               <motion.div
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
@@ -220,26 +293,19 @@ function Index() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <SwipeBlocks to="left" from="left">
+                  {/* <SwipeBlocks to="left" from="left">
                     <ScrambleText
                       continuous={true}
                       text="A time of conflict grips the Earth Sphere. The militaristic ALLIANCE maintains its iron grip over the space colonies through force and intimidation. In a desperate bid for freedom, five mysterious pilots have been dispatched to Earth, each commanding a powerful mobile suit known as a GUNDAM."
                     />
-                  </SwipeBlocks>
+                  </SwipeBlocks> */}
                 </motion.div>
                 <motion.div
                   className="sidequest-text"
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
-                >
-                  <SwipeBlocks delay={0.1} to="left" from="left">
-                    <ScrambleText
-                      continuous={true}
-                      text="Their mission: to strike at the heart of the Alliance's power and free the colonies from tyranny. As these young warriors descend through Earth's atmosphere, none can predict how their arrival will forever alter the balance of power between Earth and the colonies...."
-                    />
-                  </SwipeBlocks>
-                </motion.div>
+                ></motion.div>
               </motion.div>
             </div>
           </div>
@@ -247,19 +313,38 @@ function Index() {
             ref={sectionTwoRef}
             className="relative flex h-screen items-center justify-center"
           >
-            <h2 className="z-50 text-6xl text-white">Section Two</h2>
+            <h2 className="z-50 text-center text-6xl text-white">
+              EPISODE AC 195
+              <br />
+              OPERATION METEOR
+            </h2>
           </div>
           <div
             ref={sectionThreeRef}
             className="relative flex h-screen items-center justify-center"
           >
-            <h2 className="z-50 text-6xl text-white">Section Three</h2>
+            <h2 className="z-50 max-w-xl text-justify text-xs text-white">
+              <SwipeBlocks to="left" from="left">
+                <ScrambleText
+                  continuous={true}
+                  text="A time of conflict grips the Earth Sphere. The militaristic ALLIANCE maintains its iron grip over the space colonies through force and intimidation. In a desperate bid for freedom, five mysterious pilots have been dispatched to Earth, each commanding a powerful mobile suit known as a GUNDAM."
+                />
+              </SwipeBlocks>
+            </h2>
           </div>
           <div
             ref={sectionFourRef}
             className="relative flex h-screen items-center justify-center"
           >
-            <h2 className="z-50 text-6xl text-white">Section Four</h2>
+            <h2 className="z-50 max-w-xl text-justify text-xs text-white">
+              {" "}
+              <SwipeBlocks delay={0.1} to="left" from="left">
+                <ScrambleText
+                  continuous={true}
+                  text="Their mission: to strike at the heart of the Alliance's power and free the colonies from tyranny. As these young warriors descend through Earth's atmosphere, none can predict how their arrival will forever alter the balance of power between Earth and the colonies...."
+                />
+              </SwipeBlocks>
+            </h2>
           </div>
           <div
             ref={sectionFiveRef}
