@@ -103,29 +103,32 @@ function Index() {
       </div>
 
       {/* CONTENT */}
-      <div
-        ref={cardRef}
-        className="z-10 grid h-fit w-full max-w-xs grid-cols-12 bg-gradient-to-br from-[var(--color-primary-400)] to-primary-300 p-4 font-mono"
-      >
-        <div className="col-span-6">
-          <SwipeBlocks>PILOT STATUS</SwipeBlocks>
-        </div>
-        <div className="col-span-6 flex justify-end">
-          <SwipeBlocks>ACTIVE</SwipeBlocks>
-        </div>
-        <div className="col-span-4 text-text-muted">
-          <SwipeBlocks to="left" from="left">
-            COMBAT READY
-          </SwipeBlocks>
-        </div>
-        <div className="col-span-6 col-start-7 text-right text-text-muted">
-          <SwipeBlocks to="right" from="right">
-            SYSTEMS NOMINAL
-          </SwipeBlocks>
-        </div>
+      <div className="relative z-10 h-fit w-full max-w-xs">
+        <div className="absolute inset-0 bg-primary-400 opacity-20 mix-blend-darken"></div>
+        <div
+          ref={cardRef}
+          className="relative grid h-fit w-full grid-cols-12 bg-gradient-to-br from-[var(--color-primary-400/10)] to-primary-300 p-4 font-mono"
+        >
+          <div className="col-span-6">
+            <SwipeBlocks>PILOT STATUS</SwipeBlocks>
+          </div>
+          <div className="col-span-6 flex justify-end">
+            <SwipeBlocks>ACTIVE</SwipeBlocks>
+          </div>
+          <div className="col-span-4 text-text-muted">
+            <SwipeBlocks to="left" from="left">
+              COMBAT READY
+            </SwipeBlocks>
+          </div>
+          <div className="col-span-6 col-start-7 text-right text-text-muted">
+            <SwipeBlocks to="right" from="right">
+              SYSTEMS NOMINAL
+            </SwipeBlocks>
+          </div>
 
-        <div className="col-span-12 mt-8 flex justify-end text-text-muted">
-          <GundamTagline />
+          <div className="col-span-12 mt-8 flex justify-end text-text-muted">
+            <GundamTagline />
+          </div>
         </div>
       </div>
     </div>
