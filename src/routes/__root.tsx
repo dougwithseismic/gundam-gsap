@@ -2,7 +2,7 @@ import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { useEffect, useState } from "react";
 import { ScrambleCoordinates } from "../features/scramble-effect/scramble-coordinates";
-
+import { motion } from "framer-motion";
 export const Route = createRootRoute({
   component: () => <Root />,
 });
@@ -35,19 +35,46 @@ function Root() {
     return () => clearInterval(timer);
   }, []);
 
+  const INTRO_DELAY = 2.8;
+
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-xs text-text uppercase">
       {/* Header */}
       <header className="fixed top-0 right-0 left-0 z-50 px-4 py-4 font-mono">
         <div className="flex items-start justify-between">
-          <span className="text-text-muted">
+          <motion.span
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.5, delay: INTRO_DELAY, ease: "backOut" }}
+            className="text-text-muted"
+          >
             [WS_TERMINAL//UNIT:{ipInfo.ip}]
-          </span>
+          </motion.span>
           <div className="flex flex-col items-end gap-1">
-            <span className="text-text-muted">
+            <motion.span
+              initial={{ y: -100 }}
+              animate={{ y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: INTRO_DELAY + 0.2,
+                ease: "backOut",
+              }}
+              className="text-text-muted"
+            >
               [MOBILE_SUIT_STATUS: ACTIVE]
-            </span>
-            <ScrambleCoordinates lat={ipInfo.lat} lon={ipInfo.lon} />
+            </motion.span>
+            <motion.span
+              initial={{ y: -100 }}
+              animate={{ y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: INTRO_DELAY + 0.1,
+                ease: "easeInOut",
+              }}
+              className="text-text-muted"
+            >
+              <ScrambleCoordinates lat={ipInfo.lat} lon={ipInfo.lon} />
+            </motion.span>
           </div>
         </div>
       </header>
