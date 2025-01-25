@@ -71,7 +71,7 @@ export const GundamTagline = ({
         text: subtitle,
       },
     });
-  }, []);
+  }, [title, subtitle]);
 
   return (
     <div className="flex h-full w-full items-end" ref={containerRef}>
