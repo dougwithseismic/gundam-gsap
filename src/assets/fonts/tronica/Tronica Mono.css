@@ -1,0 +1,12 @@
+/* Webfont: TronicaMono-Regular */@font-face {
+    font-family: 'TronicaMono';
+    src: url('Tronica Mono.eot'); /* IE9 Compat Modes */
+    src: url('Tronica Mono.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+         url('Tronica Mono.woff') format('woff'), /* Modern Browsers */
+         url('Tronica Mono.ttf') format('truetype'), /* Safari, Android, iOS */
+         url('Tronica Mono.svg#TronicaMono-Regular') format('svg'); /* Legacy iOS */
+    font-style: normal;
+    font-weight: normal;
+    text-rendering: optimizeLegibility;
+}
+

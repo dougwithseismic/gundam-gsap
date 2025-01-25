@@ -1,0 +1,12 @@
+@font-face {
+  font-family: "Tanker";
+  src: url("./Tanker-Regular.eot");
+  src:
+    url("./Tanker-Regular.eot?#iefix") format("embedded-opentype"),
+    url("./Tanker-Regular.woff2") format("woff2"),
+    url("./Tanker-Regular.woff") format("woff"),
+    url("./Tanker-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

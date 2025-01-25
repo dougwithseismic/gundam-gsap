@@ -1,0 +1,91 @@
+@import "tailwindcss";
+@import "./assets/fonts/tronica/tronica.css";
+@import "./assets/fonts/tanker/tanker.css";
+
+@theme {
+  --font-mono: "Tronica", monospace;
+  --font-title: "Tanker";
+  --color-background: oklch(0.12 0 0); /* Dark background */
+  --color-text: oklch(0.88 0 0); /* Light text */
+  --color-text-muted: oklch(0.6 0 0); /* Medium light text */
+  --color-primary: oklch(0.12 0 0); /* Dark primary */
+  --color-primary-50: oklch(0.08 0 0);
+  --color-primary-100: oklch(0.1 0 0);
+  --color-primary-200: oklch(0.12 0 0);
+  --color-primary-300: oklch(0.14 0 0);
+  --color-primary-400: oklch(0.16 0 0);
+  --color-primary-500: oklch(0.18 0 0);
+  --color-primary-600: oklch(0.2 0 0);
+  --color-primary-700: oklch(0.22 0 0);
+  --color-primary-800: oklch(0.24 0 0);
+  --color-primary-900: oklch(0.26 0 0);
+  --color-primary-950: oklch(0.28 0 0);
+
+  /* Accent colors - kept vibrant for contrast */
+  --color-accent-50: oklch(0.97 0.02 250);
+  --color-accent-100: oklch(0.94 0.03 250);
+  --color-accent-200: oklch(0.89 0.06 250);
+  --color-accent-300: oklch(0.84 0.09 250);
+  --color-accent-400: oklch(0.79 0.12 250);
+  --color-accent-500: oklch(0.74 0.15 250);
+  --color-accent-600: oklch(0.69 0.18 250);
+  --color-accent-700: oklch(0.64 0.15 250);
+  --color-accent-800: oklch(0.59 0.12 250);
+  --color-accent-900: oklch(0.54 0.09 250);
+  --color-accent-950: oklch(0.49 0.06 250);
+
+  /* Neutral colors - inverted for dark mode */
+  --color-neutral-50: oklch(0.02 0 0);
+  --color-neutral-100: oklch(0.1 0 0);
+  --color-neutral-200: oklch(0.2 0 0);
+  --color-neutral-300: oklch(0.3 0 0);
+  --color-neutral-400: oklch(0.4 0 0);
+  --color-neutral-500: oklch(0.5 0 0);
+  --color-neutral-600: oklch(0.6 0 0);
+  --color-neutral-700: oklch(0.7 0 0);
+  --color-neutral-800: oklch(0.8 0 0);
+  --color-neutral-900: oklch(0.9 0 0);
+  --color-neutral-950: oklch(0.95 0 0);
+
+  /* Font sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Spacing */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+
+  /* Border radius */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+  font-family: "Tronica Mono", monospace;
+}
+
+/* Smooth transitions */
+* {
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
