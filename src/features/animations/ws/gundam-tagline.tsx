@@ -10,8 +10,8 @@ import { SwipeBlocks } from "./swipe-blocks";
 gsap.registerPlugin(SplitText, ScrambleTextPlugin);
 
 export const GundamTagline = ({
-  title = "Gundam Mobile Suit",
-  subtitle = "Sandrock Armadillo EW",
+  title = "CORNER CUTTERS",
+  subtitle = "IMPOSSIBLY DOPE",
 }: {
   title?: string;
   subtitle?: string;
@@ -54,7 +54,7 @@ export const GundamTagline = ({
       wordDelimiter: " ",
     });
 
-    gsap.from("#gundam-tagline-title", {
+    gsap.from("#seismic-tagline-title", {
       duration: 0.7,
       delay: 0.6,
       ease: "power1.inOut",
@@ -63,7 +63,7 @@ export const GundamTagline = ({
       },
     });
 
-    gsap.from("#gundam-tagline-subtitle", {
+    gsap.from("#seismic-tagline-subtitle", {
       duration: 0.7,
       delay: 0.6,
       ease: "power1.inOut",
@@ -83,11 +83,11 @@ export const GundamTagline = ({
               className="flex h-fit flex-col overflow-hidden leading-none tracking-tighter text-text-muted [&_.lines-js]:!inline-block"
             >
               <SwipeBlocks delay={0.1} from="left" to="left">
-                <div id="gundam-tagline-title">{title}</div>
+                <div id="seismic-tagline-title">{title}</div>
               </SwipeBlocks>
               <SwipeBlocks delay={0.15}>
                 <div
-                  id="gundam-tagline-subtitle"
+                  id="seismic-tagline-subtitle"
                   className="text-xl tracking-normal text-text-muted"
                 >
                   <ScrambleText
@@ -105,7 +105,7 @@ export const GundamTagline = ({
               <SwipeBlocks delay={0.4} from="left" to="left">
                 <ScrambleText
                   className="mt-2 text-text-muted/50"
-                  text="WS_TERMINAL//UNIT:89.102.174.35"
+                  text="MANIFESTO//STATUS:ACTIVATED"
                   continuous={true}
                   scrambleOptions={{
                     returnDuration: 0.5,

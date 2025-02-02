@@ -47,7 +47,7 @@ function Root() {
             transition={{ duration: 0.5, delay: INTRO_DELAY, ease: "backOut" }}
             className="text-text-muted"
           >
-            [WS_TERMINAL//UNIT:{ipInfo.ip}]
+            [SEISMIC//UNIT:{ipInfo.ip}]
           </motion.span>
           <div className="flex flex-col items-end gap-1">
             <motion.span
@@ -60,7 +60,7 @@ function Root() {
               }}
               className="text-text-muted"
             >
-              [MOBILE_SUIT_STATUS: ACTIVE]
+              [STATUS: ACTIVE]
             </motion.span>
             <motion.span
               initial={{ y: -100 }}
@@ -79,16 +79,16 @@ function Root() {
       </header>
 
       {/* Main Content */}
-      <main className="absolute inset-0 overflow-y-auto pt-16 pb-14 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary-950/50 [&::-webkit-scrollbar-track]:bg-transparent">
+      <main className="absolute inset-0 overflow-y-auto pt-16 pb-14">
         <Outlet />
       </main>
 
       {/* Footer */}
       <footer className="fixed right-0 bottom-0 left-0 border-neutral-800 bg-primary px-6 py-3 font-mono">
         <div className="flex items-center justify-between">
-          <span className="text-text-muted">[OPERATION_METEOR: STANDBY]</span>
+          <span className="text-text-muted">[IMPACT: STANDBY]</span>
           <span className="text-text-muted">
-            [SYSTEM_TIME:
+            [
             {currentTime
               .toLocaleString(undefined, {
                 day: "2-digit",

@@ -19,6 +19,8 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
   } = options;
 
   const scrambleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const scrambleIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const isHoveredRef = useRef(false);
 
   const scrambleText = useCallback(
     (
@@ -32,7 +34,50 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
         element.setAttribute("data-original-text", originalText);
       }
 
+      // Add hover event listeners
+      const handleMouseEnter = () => {
+        isHoveredRef.current = true;
+        // Clear any ongoing scramble effects
+        if (scrambleIntervalRef.current) {
+          clearInterval(scrambleIntervalRef.current);
+        }
+        // Restore original text immediately
+        element.innerHTML = originalText;
+        // Add a subtle transition
+        gsap.to(element, {
+          scale: 1.02,
+          duration: 0.3,
+          ease: "power2.out",
+        });
+      };
+
+      const handleMouseLeave = () => {
+        isHoveredRef.current = false;
+        gsap.to(element, {
+          scale: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          onComplete: () => {
+            if (continuous) {
+              // Resume scrambling effect
+              scrambleText(element, false, true);
+            }
+          },
+        });
+      };
+
+      element.addEventListener("mouseenter", handleMouseEnter);
+      element.addEventListener("mouseleave", handleMouseLeave);
+
       const chars = originalText.split("");
+
+      // If currently being hovered, don't start scrambling
+      if (isHoveredRef.current) {
+        return () => {
+          element.removeEventListener("mouseenter", handleMouseEnter);
+          element.removeEventListener("mouseleave", handleMouseLeave);
+        };
+      }
 
       // Pick random indices to scramble
       const numToScramble =
@@ -71,8 +116,13 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
       });
 
       let currentScramble = 0;
-      const scrambleInterval = setInterval(
+      scrambleIntervalRef.current = setInterval(
         () => {
+          if (isHoveredRef.current) {
+            clearInterval(scrambleIntervalRef.current);
+            return;
+          }
+
           scrambledElements.forEach((span) => {
             span.textContent =
               scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
@@ -87,7 +137,7 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
 
           currentScramble++;
           if (currentScramble >= scrambleTimes) {
-            clearInterval(scrambleInterval);
+            clearInterval(scrambleIntervalRef.current);
             if (isReturning) {
               // Restore original characters
               element.querySelectorAll("span").forEach((span, i) => {
@@ -104,10 +154,12 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
               ease: "elastic.out(1, 0.3)",
             });
 
-            // If continuous, start the effect again after a delay
-            if (continuous && !isReturning) {
+            // If continuous and not being hovered, start the effect again after a delay
+            if (continuous && !isHoveredRef.current) {
               setTimeout(() => {
-                scrambleText(element, false, true);
+                if (!isHoveredRef.current) {
+                  scrambleText(element, false, true);
+                }
               }, 2000);
             }
           }
@@ -116,7 +168,9 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
       );
 
       return () => {
-        clearInterval(scrambleInterval);
+        clearInterval(scrambleIntervalRef.current);
+        element.removeEventListener("mouseenter", handleMouseEnter);
+        element.removeEventListener("mouseleave", handleMouseLeave);
       };
     },
     [
@@ -131,6 +185,9 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
   const cleanup = () => {
     scrambleTimers.current.forEach((timer) => clearTimeout(timer));
     scrambleTimers.current = [];
+    if (scrambleIntervalRef.current) {
+      clearInterval(scrambleIntervalRef.current);
+    }
   };
 
   return {

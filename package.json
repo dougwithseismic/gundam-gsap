@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@lobehub/icons": "^1.64.0",
     "@react-three/drei": "^9.121.3",
     "@react-three/fiber": "^8.17.12",
     "@tailwindcss/vite": "^4.0.0",

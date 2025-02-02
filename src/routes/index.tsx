@@ -3,13 +3,29 @@ import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import YouTube, { YouTubeEvent } from "react-youtube";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import YouTube from "react-youtube";
 import { GundamTagline } from "../features/animations/ws/gundam-tagline";
 import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
 import { ScrambleText } from "../features/scramble-effect/scramble-text";
+import VideoGrid from "../features/video-grid/video-grid";
+import {
+  Anthropic,
+  Aws,
+  Cursor,
+  DeepSeek,
+  Github,
+  HuggingFace,
+  OpenAI,
+  Perplexity,
+  Vercel,
+  XAI,
+} from "@lobehub/icons";
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
+
+// Constants
+export const GUNDAM_VIDEO_ID = "8-qzOpE3dyM";
 
 // Add this type for our grid cell data
 type GridCell = {
@@ -19,33 +35,60 @@ type GridCell = {
   col: number;
 };
 
-// Add these new types and helper functions at the top
-type MousePosition = {
-  x: number;
-  y: number;
-};
-
-// First, add this type to track player instances
-type PlayerInstance = {
-  id: string;
-  player: any; // YouTube player instance
-};
-
 // Add this data at the top level
-const GUNDAM_DATA = [
-  { pilot: "HEERO YUY", suit: "WING GUNDAM ZERO" },
-  { pilot: "DUO MAXWELL", suit: "GUNDAM DEATHSCYTHE" },
-  { pilot: "TROWA BARTON", suit: "GUNDAM HEAVYARMS" },
-  { pilot: "QUATRE WINNER", suit: "GUNDAM SANDROCK" },
-  { pilot: "CHANG WUFEI", suit: "GUNDAM SHENLONG" },
-  { pilot: "ZECHS MERQUISE", suit: "TALLGEESE" },
-  { pilot: "TREIZE KHUSHRENADA", suit: "EPYON" },
-  { pilot: "LUCREZIA NOIN", suit: "TAURUS" },
-  { pilot: "LADY UNE", suit: "LEO" },
-  { pilot: "OTTO", suit: "ARIES" },
-  { pilot: "MUELLER", suit: "TRAGOS" },
-  { pilot: "ALEX", suit: "PISCES" },
+const SEISMIC_DATA = [
+  {
+    title: "UNFAIR ADVANTAGE",
+    description: "Tilting Fields in Your Favor",
+  },
+  {
+    title: "DOPENESS FACTOR",
+    description: "Beyond Mediocrity",
+  },
+  {
+    title: "SPEED WINS",
+    description: "Ship Now, Perfect Later",
+  },
+  {
+    title: "MAXIMAL RESULTS",
+    description: "Minimal Effort, Maximum Impact",
+  },
+  {
+    title: "SYSTEM HACKING",
+    description: "Rewriting the Rules",
+  },
+  {
+    title: "RESOURCE MASTERY",
+    description: "Efficiency as Power",
+  },
+  {
+    title: "HUMAN MULTIPLIER",
+    description: "Exponential Team Growth",
+  },
+  {
+    title: "WIN-WIN DEALS",
+    description: "Building Trust & Value",
+  },
+  {
+    title: "DATA DRIVEN",
+    description: "Numbers Never Lie",
+  },
+  {
+    title: "PERPETUAL BETA",
+    description: "Always Iterating",
+  },
+  {
+    title: "VALUE CREATION",
+    description: "Monetization Through Impact",
+  },
+  {
+    title: "TRUE INFLUENCE",
+    description: "Authentic Innovation",
+  },
 ] as const;
+
+// Lazy load the VideoGrid component
+// const VideoGrid = lazy(() => import("../features/video-grid/video-grid"));
 
 const Index = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -54,6 +97,7 @@ const Index = () => {
   const smoothWrapperRef = useRef<HTMLDivElement>(null);
   const smoothContentRef = useRef<HTMLDivElement>(null);
   const hitMiddleRef = useRef(false);
+  const hitEndRef = useRef(false);
 
   // Section Refs
   const sectionOneRef = useRef<HTMLDivElement>(null);
@@ -70,6 +114,7 @@ const Index = () => {
   const sectionFourTextRef = useRef<HTMLHeadingElement>(null);
 
   const [isVideoReady, setIsVideoReady] = useState(false);
+
   // Generate grid data instead of random cards
   const gridData = useMemo(() => {
     const cells: GridCell[] = [];
@@ -86,93 +131,19 @@ const Index = () => {
     return cells;
   }, []);
 
-  // Add these new states and refs
-  const gridRef = useRef<HTMLDivElement>(null);
-  const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // Add ref to track player instances
-  const playerInstancesRef = useRef<PlayerInstance[]>([]);
-
   // First, add a new ref for the text overlay
   const sectionFiveTextRef = useRef<HTMLDivElement>(null);
 
-  // Add this new function to calculate distance from mouse to cell center
-  const calculateDistance = (cellRect: DOMRect, mousePos: MousePosition) => {
-    const cellCenterX = cellRect.left + cellRect.width / 2;
-    const cellCenterY = cellRect.top + cellRect.height / 2;
-    return Math.sqrt(
-      Math.pow(mousePos.x - cellCenterX, 2) +
-        Math.pow(mousePos.y - cellCenterY, 2),
-    );
+  const opts = {
+    playerVars: {
+      autoplay: 1,
+      controls: 0,
+      mute: 1,
+      loop: 1,
+      playlist: GUNDAM_VIDEO_ID,
+      start: 58,
+    },
   };
-
-  // Throttle mousemove updates using requestAnimationFrame
-  useEffect(() => {
-    let rafId: number | null = null;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!gridRef.current) return;
-
-      const newMousePos = { x: e.clientX, y: e.clientY };
-
-      if (rafId !== null) return;
-
-      rafId = requestAnimationFrame(() => {
-        const gridRect = gridRef.current!.getBoundingClientRect();
-
-        cellRefs.current.forEach((cellRef, index) => {
-          if (!cellRef) return;
-
-          const cellRect = cellRef.getBoundingClientRect();
-          const distance = calculateDistance(cellRect, newMousePos);
-          const maxDistance = Math.sqrt(
-            gridRect.width ** 2 + gridRect.height ** 2,
-          );
-          const isNear = distance < maxDistance * 0.1;
-
-          const iframeId = `youtube-player-${index}`;
-          const iframe = document.getElementById(iframeId);
-          const labelId = `pilot-label-${index}`;
-          const label = document.getElementById(labelId);
-
-          if (iframe) {
-            const glowBg = cellRef.querySelector(".video-glow-bg");
-            gsap.to(iframe, {
-              scale: isNear ? 1.2 : 1,
-              opacity: isNear ? 1 : 0,
-              filter: isNear
-                ? "grayscale(0%) brightness(100%)"
-                : "grayscale(100%) brightness(50%)",
-              duration: isNear ? 0.8 : 1.5,
-              ease: isNear ? "expo.out" : "power2.out",
-            });
-            gsap.to(glowBg, {
-              opacity: isNear ? 1 : 0,
-              scale: isNear ? 1.3 : 1,
-              duration: isNear ? 0.8 : 1.5,
-              delay: isNear ? 0.1 : 0,
-              ease: isNear ? "expo.out" : "power2.out",
-            });
-          }
-          if (label) {
-            gsap.to(label, {
-              opacity: isNear ? 1 : 0,
-              y: isNear ? 0 : 20,
-              duration: isNear ? 0.8 : 1.5,
-              ease: isNear ? "expo.out" : "power2.out",
-            });
-          }
-        });
-        rafId = null;
-      });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
-  }, []);
 
   useEffect(() => {
     // Create smooth scroller
@@ -216,7 +187,6 @@ const Index = () => {
         start: "top top",
         end: "bottom 40%",
         scrub: true,
-        markers: false,
       },
     });
 
@@ -233,7 +203,6 @@ const Index = () => {
         start: "top top",
         end: "bottom 20%",
         scrub: true,
-        markers: false,
       },
     });
 
@@ -254,7 +223,6 @@ const Index = () => {
         start: "top top",
         end: "bottom 20%",
         scrub: true,
-        markers: false,
       },
     });
 
@@ -304,10 +272,8 @@ const Index = () => {
         start: "top top",
         end: "bottom 20%",
         scrub: true,
-        markers: false,
         onUpdate: (self) => {
           if (self.progress >= 0.5 && !hitMiddleRef.current) {
-            console.log("Timeline is halfway!");
             sectionThreeTimeline.to(videoContainerRef.current, {
               width: "95%",
               height: "95%",
@@ -318,11 +284,13 @@ const Index = () => {
             hitMiddleRef.current = true;
           } else if (self.progress < 0.5) {
             hitMiddleRef.current = false;
+            hitEndRef.current = false; // Reset end flag when scrolling back up
           }
-          if (self.progress >= 1) {
+          if (self.progress >= 1 && !hitEndRef.current) {
             sectionThreeTimeline.to(videoContainerRef.current, {
               opacity: 1,
             });
+            hitEndRef.current = true;
           }
         },
       },
@@ -437,64 +405,56 @@ const Index = () => {
 
     return () => {
       smoother.kill();
+      // Clean up all GSAP animations and ScrollTriggers
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      gsap.globalTimeline.clear();
     };
   }, [isVideoReady]);
 
-  useEffect(() => {
-    cellRefs.current.forEach((cellRef, index) => {
-      if (!cellRef) return;
-      const iframe = document.getElementById(`youtube-player-${index}`);
-      const label = document.getElementById(`pilot-label-${index}`);
-      if (iframe) {
-        gsap.set(iframe, {
-          opacity: 0,
-          filter: "grayscale(100%) brightness(50%)",
-        });
-      }
-      if (label) {
-        gsap.set(label, { opacity: 0, y: 20 });
-      }
-    });
-  }, []);
-
-  // VIDEO CLIPPER
-  // useVideoClipper({ isVideoReady, containerRef: videoContainerRef });
-
-  // Update the onPlayerReady callback
-  const handlePlayerReady = useCallback(
-    ({ event, index }: { event: YouTubeEvent; index: number }) => {
-      event.target.playVideo();
-      event.target.mute();
-      if (index === 0) {
-        setIsVideoReady(true);
-      }
-
-      // Store player instance
-      playerInstancesRef.current[index] = {
-        id: `youtube-player-${index}`,
-        player: event.target,
-      };
-    },
-    [],
-  );
-
-  const opts = {
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      mute: 1,
-      loop: 1,
-      playlist: "8-qzOpE3dyM",
-      start: 58,
-    },
-  };
-
   return (
     <>
+      {/* SPLASH LOADER */}
+      <motion.div
+        initial={{ opacity: 1 }}
+        animate={{ opacity: isVideoReady ? 0 : 1 }}
+        transition={{ duration: 0.8, ease: "expo.inOut" }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
+        style={{
+          pointerEvents: isVideoReady ? "none" : "auto",
+        }}
+      >
+        <div className="flex flex-col items-center gap-8">
+          <SwipeBlocks>
+            <ScrambleText
+              text="WS™"
+              className="font-mono text-4xl font-bold text-white sm:text-6xl md:text-8xl"
+              continuous={true}
+              scrambleOptions={{
+                maxScrambleCount: 3,
+                scrambleChars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ™",
+              }}
+            />
+          </SwipeBlocks>
+          <motion.div
+            className="font-mono text-xs text-white/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <motion.span
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity, times: [0, 0.5, 1] }}
+            >
+              loading...
+            </motion.span>
+          </motion.div>
+        </div>
+      </motion.div>
+
       {/* BACKGROUND VIDEO */}
       <div
         ref={videoContainerRef}
-        className="pointer-events-none fixed top-0 left-0 z-0 flex h-0 w-0 flex-col items-center justify-center overflow-clip bg-primary-100"
+        className="pointer-events-none fixed top-0 left-0 z-0 flex h-0 w-0 flex-col items-center justify-center overflow-clip bg-primary-100 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary-950/50 [&::-webkit-scrollbar-track]:bg-transparent"
       >
         <motion.div
           id="background-video"
@@ -504,11 +464,9 @@ const Index = () => {
           className="pointer-events-none absolute inset-0 z-10 min-h-svh min-w-svw"
         >
           <YouTube
-            videoId="8-qzOpE3dyM"
+            videoId={GUNDAM_VIDEO_ID}
             opts={opts}
-            onReady={(e: YouTubeEvent) =>
-              handlePlayerReady({ event: e, index: 0 })
-            }
+            onPlay={() => setIsVideoReady(true)}
             className="pointer-events-none"
             iframeClassName="pointer-events-none z-10 min-h-svh min-w-svw scale-[1.2] opacity-100"
           />
@@ -518,7 +476,7 @@ const Index = () => {
       {/* PILOT CARD */}
       <div
         id="pilot-card"
-        className="h- fixed right-4 bottom-12 z-20 ml-auto h-fit w-full max-w-xs"
+        className="fixed right-4 bottom-12 z-20 ml-auto w-full max-w-xs sm:max-w-sm"
       >
         <div className="absolute inset-0 bg-primary-400 opacity-80 mix-blend-darken"></div>
         <div
@@ -526,23 +484,23 @@ const Index = () => {
           className="relative grid h-fit w-full grid-cols-12 bg-gradient-to-br from-[var(--color-primary-400/10)] to-primary-300 p-4 font-mono"
         >
           <div className="col-span-6">
-            <SwipeBlocks>PILOT STATUS</SwipeBlocks>
+            <SwipeBlocks>REVENUE DRIVEN</SwipeBlocks>
           </div>
           <div className="col-span-6 flex justify-end">
-            <SwipeBlocks>ACTIVE</SwipeBlocks>
+            <SwipeBlocks>OUTREACH AUTOMATION</SwipeBlocks>
           </div>
           <div className="col-span-4 text-text-muted">
             <SwipeBlocks to="left" from="left">
-              COMBAT READY
+              SKUNKWORKS & AUTOMATION
             </SwipeBlocks>
           </div>
           <div className="col-span-6 col-start-7 text-right text-text-muted">
             <SwipeBlocks to="right" from="right">
-              SYSTEMS NOMINAL
+              AI ASSISTED DEVELOPMENT
             </SwipeBlocks>
           </div>
           <div className="col-span-12 mt-8 flex justify-end text-text-muted">
-            <GundamTagline />
+            <GundamTagline title="CONTACT" subtitle="HELLO@WITHSEISMIC.COM" />
           </div>
         </div>
       </div>
@@ -571,14 +529,7 @@ const Index = () => {
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
-                >
-                  {/* <SwipeBlocks to="left" from="left">
-                    <ScrambleText
-                      continuous={true}
-                      text="A time of conflict grips the Earth Sphere. The militaristic ALLIANCE maintains its iron grip over the space colonies through force and intimidation. In a desperate bid for freedom, five mysterious pilots have been dispatched to Earth, each commanding a powerful mobile suit known as a GUNDAM."
-                    />
-                  </SwipeBlocks> */}
-                </motion.div>
+                ></motion.div>
                 <motion.div
                   className="sidequest-text"
                   initial={{ opacity: 0, x: -100 }}
@@ -592,16 +543,32 @@ const Index = () => {
           {/* SECTION TWO */}
           <div
             ref={sectionTwoRef}
-            className="relative flex h-screen items-center justify-center"
+            className="relative flex h-screen flex-col items-center justify-center gap-8"
           >
             <h2
               ref={sectionTwoTextRef}
-              className="z-50 text-center text-6xl text-white"
+              className="z-50 text-center text-3xl text-white sm:text-4xl md:text-6xl"
             >
-              EPISODE AC 195
+              WE BUILD FORCE
               <br />
-              OPERATION METEOR
+              MULTIPLIER TOOLS FOR
+              <br />
+              UNDERDOG PLAYERS THAT
+              <br />
+              WANT TO WIN.
             </h2>
+            <div className="mx-auto my-8 grid grid-cols-3 gap-8 sm:grid-cols-5">
+              <Anthropic.Avatar size={48} />
+              <OpenAI.Avatar size={48} />
+              <DeepSeek.Avatar size={48} />
+              <Cursor.Avatar size={48} />
+              <HuggingFace.Avatar size={48} />
+              <Perplexity.Avatar size={48} />
+              <Aws.Avatar size={48} />
+              <Github.Avatar size={48} />
+              <Vercel.Avatar size={48} />
+              <XAI.Avatar size={48} />
+            </div>
           </div>
 
           {/* SECTION THREE */}
@@ -611,12 +578,12 @@ const Index = () => {
           >
             <h2
               ref={sectionThreeTextRef}
-              className="z-50 max-w-xl text-justify text-xs text-white"
+              className="z-50 mx-auto max-w-md text-center text-sm text-white sm:text-base md:text-lg"
             >
               <SwipeBlocks to="left" from="left">
                 <ScrambleText
                   continuous={true}
-                  text="A time of conflict grips the Earth Sphere. The militaristic ALLIANCE maintains its iron grip over the space colonies through force and intimidation. In a desperate bid for freedom, five mysterious pilots have been dispatched to Earth, each commanding a powerful mobile suit known as a GUNDAM."
+                  text="We don't just play the game — we change the rules. Every unfair advantage is an opportunity, every challenge a chance to forge something impossibly dope. We're the hackers in the garage, the artists with a spreadsheet, the corporate renegades."
                 />
               </SwipeBlocks>
             </h2>
@@ -629,12 +596,12 @@ const Index = () => {
           >
             <h2
               ref={sectionFourTextRef}
-              className="z-50 max-w-xl text-justify text-xs text-white"
+              className="z-50 mx-auto max-w-md text-center text-sm text-white sm:text-base md:text-lg"
             >
               <SwipeBlocks delay={0.1} to="left" from="left">
                 <ScrambleText
                   continuous={true}
-                  text="Their mission: to strike at the heart of the Alliance's power and free the colonies from tyranny. As these young warriors descend through Earth's atmosphere, none can predict how their arrival will forever alter the balance of power between Earth and the colonies...."
+                  text="Speed over perfection. We don't just cut corners; we redesign the shape. We eliminate the unnecessary so the necessary may speak. Fast execution beats flawless planning, every single time."
                 />
               </SwipeBlocks>
             </h2>
@@ -651,81 +618,20 @@ const Index = () => {
               className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white"
             >
               <div className="flex flex-col items-center gap-8">
-                <SwipeBlocks>
-                  <h2 className="text-6xl font-bold">MOBILE SUIT DATABASE</h2>
-                </SwipeBlocks>
+                <SwipeBlocks></SwipeBlocks>
                 <SwipeBlocks delay={0.2}>
-                  <p className="max-w-xl text-center font-mono text-sm">
-                    ACCESSING CLASSIFIED RECORDS... OPERATION METEOR PILOT DATA
+                  <p className="mx-auto max-w-xs text-center font-mono text-sm sm:max-w-xl">
+                    ACCESSING OPTIMIZATION PROTOCOLS... LOADING FORCE
+                    MULTIPLIERS
                   </p>
                 </SwipeBlocks>
               </div>
             </div>
 
-            {/* Video Grid */}
-            <div
-              ref={gridRef}
-              className="relative grid w-full grid-cols-4 grid-rows-3 gap-1"
-              data-speed="0.8"
-            >
-              {gridData.map((cell, index) => (
-                <div
-                  key={cell.id}
-                  ref={(el) => (cellRefs.current[index] = el)}
-                  className="relative flex transform-gpu items-center justify-center overflow-hidden"
-                  style={{
-                    transformOrigin: "center center",
-                    willChange: "transform",
-                  }}
-                >
-                  {/* Glow Background */}
-                  <div
-                    className="video-glow-bg absolute inset-0 opacity-0 transition-transform"
-                    style={{
-                      background:
-                        "radial-gradient(circle, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 70%, rgba(147,51,234,0) 100%)",
-                      transform: "translateZ(-1px)",
-                    }}
-                  />
-                  <div className="video-wrapper relative aspect-video h-full w-full overflow-hidden">
-                    <YouTube
-                      videoId="8-qzOpE3dyM"
-                      opts={{
-                        ...opts,
-                        playerVars: {
-                          ...opts.playerVars,
-                          start: cell.startTime,
-                        },
-                      }}
-                      onReady={(e: YouTubeEvent) =>
-                        handlePlayerReady({ event: e, index })
-                      }
-                      className="pointer-events-none absolute inset-0"
-                      iframeClassName={`absolute inset-0 h-full w-full origin-center transition-all duration-300`}
-                      id={`youtube-player-${index}`}
-                    />
-                  </div>
-                  {/* Pilot and Mobile Suit Label */}
-                  <div
-                    id={`pilot-label-${index}`}
-                    className="pointer-events-none absolute bottom-4 left-4 flex flex-col opacity-0"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <ScrambleText
-                        text={GUNDAM_DATA[index]?.pilot || "UNKNOWN PILOT"}
-                        className="font-mono text-xs text-white"
-                        continuous={true}
-                      />
-                      <ScrambleText
-                        text={GUNDAM_DATA[index]?.suit || "UNKNOWN UNIT"}
-                        className="font-mono text-sm font-bold text-white"
-                        continuous={true}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Lazy loaded Video Grid */}
+            <Suspense fallback={<div className="text-white">Loading...</div>}>
+              <VideoGrid gridData={gridData} seismicData={SEISMIC_DATA} />
+            </Suspense>
           </div>
 
           {/* SECTION SIX */}
@@ -733,7 +639,13 @@ const Index = () => {
             ref={sectionSixRef}
             className="relative flex h-screen items-center justify-center"
           >
-            <h2 className="z-50 text-6xl text-white">Section Six</h2>
+            <h2 className="z-50 mx-auto max-w-md text-center text-3xl text-white sm:text-4xl md:text-6xl">
+              FULLSTACK AI ASSISTED DEVELOPMENT
+              <br />
+              <span className="mt-4 block text-xl sm:text-2xl md:text-2xl">
+                FROM THE HACKERS IN THE BASEMENT
+              </span>
+            </h2>
           </div>
 
           {/* SECTION SEVEN */}
@@ -741,7 +653,9 @@ const Index = () => {
             ref={sectionSevenRef}
             className="relative flex h-screen items-center justify-center"
           >
-            <h2 className="z-50 text-6xl text-white">Section Seven</h2>
+            <h2 className="z-50 text-center text-3xl text-white sm:text-4xl md:text-6xl">
+              hello@withseismic.com
+            </h2>
           </div>
         </div>
       </div>
