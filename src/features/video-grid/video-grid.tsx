@@ -213,10 +213,29 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
   // Timed highlight effect
   useEffect(() => {
-    let currentIndex = 0;
+    let availableIndices = [...Array(gridData.length).keys()];
+
+    const shuffleIndices = () => {
+      availableIndices = [...Array(gridData.length).keys()];
+      for (let i = availableIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableIndices[i], availableIndices[j]] = [
+          availableIndices[j],
+          availableIndices[i],
+        ];
+      }
+    };
+
+    shuffleIndices();
 
     intervalRef.current = window.setInterval(() => {
+      if (availableIndices.length === 0) {
+        shuffleIndices();
+      }
+
+      const currentIndex = availableIndices.pop()!;
       const cellRef = cellRefs.current[currentIndex];
+
       if (cellRef) {
         const video = videoRefs.current[currentIndex];
         const glowBgElement = cellRef.querySelector(".video-glow-bg");
@@ -227,7 +246,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             scale: 1.2,
             opacity: 1,
             filter: "grayscale(0%) brightness(100%)",
-            duration: 0.8,
+            duration: 0.4,
             ease: "expo.out",
           });
         }
@@ -236,8 +255,8 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           createAndStoreAnimation(glowBgElement, {
             opacity: 1,
             scale: 1.3,
-            duration: 0.8,
-            delay: 0.1,
+            duration: 0.4,
+            delay: 0.05,
             ease: "expo.out",
           });
         }
@@ -246,7 +265,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           createAndStoreAnimation(labelElement, {
             opacity: 1,
             y: 0,
-            duration: 0.8,
+            duration: 0.4,
             ease: "expo.out",
           });
         }
@@ -257,7 +276,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
               scale: 1,
               opacity: 0,
               filter: "grayscale(100%) brightness(50%)",
-              duration: 1.5,
+              duration: 0.6,
               ease: "power2.out",
             });
           }
@@ -266,7 +285,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             createAndStoreAnimation(glowBgElement, {
               opacity: 0,
               scale: 1,
-              duration: 1.5,
+              duration: 0.6,
               ease: "power2.out",
             });
           }
@@ -275,17 +294,15 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             createAndStoreAnimation(labelElement, {
               opacity: 0,
               y: 20,
-              duration: 1.5,
+              duration: 0.6,
               ease: "power2.out",
             });
           }
-        }, 1500);
+        }, 600);
 
         return () => clearTimeout(timeoutId);
       }
-
-      currentIndex = (currentIndex + 1) % gridData.length;
-    }, 2500);
+    }, 400);
 
     return () => {
       if (intervalRef.current !== null) {
@@ -369,6 +386,9 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
                 text={seismicData[index]?.description || "Digital Solutions"}
                 className="font-mono text-sm font-bold text-white"
                 continuous={true}
+                scrambleOptions={{
+                  maxScrambleCount: 1,
+                }}
               />
             </div>
           </div>
