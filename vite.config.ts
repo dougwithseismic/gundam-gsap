@@ -14,4 +14,18 @@ export default defineConfig({
       allow: [".."],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "animation-vendor": ["gsap", "@gsap/react", "framer-motion"],
+          "three-vendor": ["three", "@react-three/fiber", "@react-three/drei"],
+          "router-vendor": ["@tanstack/react-router"],
+          "ui-vendor": ["@lobehub/icons", "lucide-react"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 });
