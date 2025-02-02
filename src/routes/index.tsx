@@ -1,13 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import gsap from "gsap";
-import { ScrollSmoother } from "gsap/ScrollSmoother";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { GundamTagline } from "../features/animations/ws/gundam-tagline";
-import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
-import { ScrambleText } from "../features/scramble-effect/scramble-text";
-import VideoGrid from "../features/video-grid/video-grid";
 import {
   Anthropic,
   Aws,
@@ -20,6 +10,17 @@ import {
   Vercel,
   XAI,
 } from "@lobehub/icons";
+import { createFileRoute } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollSmoother } from "gsap/ScrollSmoother";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GundamTagline } from "../features/animations/ws/gundam-tagline";
+import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
+import { Preloader } from "../features/preloader/preloader";
+import { ScrambleText } from "../features/scramble-effect/scramble-text";
+import VideoGrid from "../features/video-grid/video-grid";
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
@@ -95,8 +96,6 @@ const Index = () => {
   const storyTextRef = useRef<HTMLDivElement>(null);
   const smoothWrapperRef = useRef<HTMLDivElement>(null);
   const smoothContentRef = useRef<HTMLDivElement>(null);
-  const hitMiddleRef = useRef(false);
-  const hitEndRef = useRef(false);
 
   // Section Refs
   const sectionOneRef = useRef<HTMLDivElement>(null);
@@ -158,7 +157,11 @@ const Index = () => {
       transformOrigin: "center left",
     });
 
-    if (!isVideoReady) return;
+    if (!isVideoReady) {
+      return () => {
+        smoother.kill();
+      };
+    }
 
     // Immediate animations chained in timeline
     const immediateTimeline = gsap.timeline();
@@ -262,42 +265,30 @@ const Index = () => {
       { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
     );
 
-    // SECTION THREE (video animations)
+    // SECTION THREE (video animations) - replaced dynamic onUpdate with fixed timeline
     const sectionThreeTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: sectionThreeRef.current,
         start: "top top",
         end: "bottom 20%",
         scrub: true,
-        onUpdate: (self) => {
-          if (self.progress >= 0.5 && !hitMiddleRef.current) {
-            sectionThreeTimeline.to(videoContainerRef.current, {
-              width: "95%",
-              height: "95%",
-              filter: "grayscale(0%)",
-              opacity: 1,
-              scale: 1,
-            });
-            hitMiddleRef.current = true;
-          } else if (self.progress < 0.5) {
-            hitMiddleRef.current = false;
-            hitEndRef.current = false; // Reset end flag when scrolling back up
-          }
-          if (self.progress >= 1 && !hitEndRef.current) {
-            sectionThreeTimeline.to(videoContainerRef.current, {
-              opacity: 1,
-            });
-            hitEndRef.current = true;
-          }
-        },
       },
     });
-
-    sectionThreeTimeline.to(videoContainerRef.current, {
-      width: "100%",
-      height: "100%",
-      scale: 1,
-    });
+    sectionThreeTimeline
+      .to(videoContainerRef.current, {
+        width: "95%",
+        height: "95%",
+        filter: "grayscale(0%)",
+        opacity: 1,
+        scale: 1,
+        duration: 0.5,
+      })
+      .to(videoContainerRef.current, {
+        width: "100%",
+        height: "100%",
+        scale: 1,
+        duration: 0.5,
+      });
 
     // New text animation for SECTION THREE
     const sectionThreeTextTimeline = gsap.timeline({
@@ -339,7 +330,6 @@ const Index = () => {
       },
     });
 
-    // Animate the main video container
     sectionFiveTimeline
       .to(
         videoContainerRef.current,
@@ -350,7 +340,6 @@ const Index = () => {
         },
         0,
       )
-      // Animate in the text overlay
       .fromTo(
         sectionFiveTextRef.current,
         {
@@ -365,7 +354,6 @@ const Index = () => {
         },
         ">-0.5",
       )
-      // Animate out the text overlay
       .to(
         sectionFiveTextRef.current,
         {
@@ -387,22 +375,36 @@ const Index = () => {
       },
     });
 
-    // Main video returns more dramatically
     sectionSixTimeline.to(
       videoContainerRef.current,
       {
         filter: "grayscale(0%) blur(0px)",
         opacity: 1,
-        scale: 1.1,
+        scale: 1.2,
         duration: 1,
         ease: "power2.inOut",
       },
       "<0.3",
     );
 
+    const sectionSevenTimeline = gsap.timeline({
+      scrollTrigger: {
+        trigger: sectionSevenRef.current,
+        start: "top 80%",
+        end: "center center",
+        scrub: true,
+      },
+    });
+
+    sectionSevenTimeline.to(videoContainerRef.current, {
+      filter: "grayscale(100%) blur(8px)",
+      opacity: 0.3,
+      scale: 0.6,
+      ease: "power2.inOut",
+    });
+
     return () => {
       smoother.kill();
-      // Clean up all GSAP animations and ScrollTriggers
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
       gsap.globalTimeline.clear();
     };
@@ -410,43 +412,7 @@ const Index = () => {
 
   return (
     <>
-      {/* SPLASH LOADER */}
-      <motion.div
-        initial={{ opacity: 1 }}
-        animate={{ opacity: isVideoReady ? 0 : 1 }}
-        transition={{ duration: 0.8, ease: "expo.inOut" }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
-        style={{
-          pointerEvents: isVideoReady ? "none" : "auto",
-        }}
-      >
-        <div className="flex flex-col items-center gap-8">
-          <SwipeBlocks>
-            <ScrambleText
-              text="WS™"
-              className="font-mono text-4xl font-bold text-white sm:text-6xl md:text-8xl"
-              continuous={true}
-              scrambleOptions={{
-                maxScrambleCount: 3,
-                scrambleChars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ™",
-              }}
-            />
-          </SwipeBlocks>
-          <motion.div
-            className="font-mono text-xs text-white/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <motion.span
-              animate={{ opacity: [0, 1, 0] }}
-              transition={{ duration: 2, repeat: Infinity, times: [0, 0.5, 1] }}
-            >
-              loading...
-            </motion.span>
-          </motion.div>
-        </div>
-      </motion.div>
+      <Preloader isReady={isVideoReady} />
 
       {/* BACKGROUND VIDEO */}
       <div
@@ -628,9 +594,9 @@ const Index = () => {
             </div>
 
             {/* Lazy loaded Video Grid */}
-            <Suspense fallback={<div className="text-white">Loading...</div>}>
+            <div className="absolute inset-0">
               <VideoGrid gridData={gridData} seismicData={SEISMIC_DATA} />
-            </Suspense>
+            </div>
           </div>
 
           {/* SECTION SIX */}

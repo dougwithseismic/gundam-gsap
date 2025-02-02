@@ -47,6 +47,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const cellActiveStates = useRef<boolean[]>([]);
   const intervalRef = useRef<number | null>(null);
   const animationsRef = useRef<gsap.core.Tween[]>([]);
 
@@ -132,6 +133,15 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             gridRect.width ** 2 + gridRect.height ** 2,
           );
           const isNear = distance < maxDistance * 0.1;
+
+          // Cache check: Only animate if the near state has changed
+          if (typeof cellActiveStates.current[index] === "undefined") {
+            cellActiveStates.current[index] = false;
+          }
+          if (cellActiveStates.current[index] === isNear) {
+            return; // Skip if no state change
+          }
+          cellActiveStates.current[index] = isNear;
 
           const video = videoRefs.current[index];
           const labelId = `pilot-label-${index}`;
@@ -302,7 +312,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
         return () => clearTimeout(timeoutId);
       }
-    }, 400);
+    }, 1000); // Increased interval to 1000ms to reduce frequency
 
     return () => {
       if (intervalRef.current !== null) {

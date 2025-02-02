@@ -12,7 +12,7 @@ interface ScrambleTextProps {
 
 export const ScrambleText = ({
   text,
-  className = "",
+  className = "text-left",
   continuous = false,
   scrambleOptions,
 }: ScrambleTextProps) => {

@@ -5,6 +5,7 @@
 @theme {
   --font-mono: "Tronica", monospace;
   --font-title: "Tanker";
+
   --color-background: oklch(0.12 0 0); /* Dark background */
   --color-text: oklch(0.88 0 0); /* Light text */
   --color-text-muted: oklch(0.6 0 0); /* Medium light text */
@@ -80,7 +81,7 @@
 body {
   background-color: var(--color-primary);
   color: var(--color-text);
-  font-family: "Tronica Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 /* Smooth transitions */

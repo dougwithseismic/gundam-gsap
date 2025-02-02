@@ -8,29 +8,16 @@ export const Route = createRootRoute({
 
 function Root() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [ipInfo, setIpInfo] = useState({
+  const ipInfo = {
     ip: "127.0.0.1",
     lat: 52.111,
     lon: 21.0,
-  });
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
-    // Fetch IP and location info
-    fetch("https://ipapi.co/json/")
-      .then((res) => res.json())
-      .then((data) => {
-        setIpInfo({
-          ip: data.ip,
-          lat: data.latitude,
-          lon: data.longitude,
-        });
-      })
-      .catch(console.error);
-
     return () => clearInterval(timer);
   }, []);
 
