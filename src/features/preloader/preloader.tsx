@@ -20,17 +20,9 @@ export const Preloader = ({
   const [isLocked, setIsLocked] = useState(false);
   const [hasStartedCountdown, setHasStartedCountdown] = useState(false);
   const [isNearingEnd, setIsNearingEnd] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
-
-  // Handle initial video setup
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(console.error);
-    }
-  }, []);
 
   // Handle countdown
   useEffect(() => {
@@ -89,56 +81,37 @@ export const Preloader = ({
   useEffect(() => {
     if (!containerRef.current || !contentRef.current || isNearingEnd) return;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: ".smooth-wrapper",
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-
     scrollTriggerRef.current = ScrollTrigger.create({
       trigger: ".smooth-wrapper",
       start: "top top",
       end: "bottom top",
       scrub: true,
+      onUpdate: (self) => {
+        if (contentRef.current) {
+          gsap.to(contentRef.current, {
+            opacity: 1 - self.progress,
+            scale: 0.95 + 0.05 * (1 - self.progress),
+            duration: 0,
+          });
+        }
+      },
     });
 
-    tl.to(
-      contentRef.current,
-      {
-        opacity: 0,
-        scale: 0.95,
-        ease: "none",
-      },
-      0,
-    );
-
     return () => {
-      tl.kill();
       if (scrollTriggerRef.current) {
         scrollTriggerRef.current.kill();
       }
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
   }, [isNearingEnd]);
 
   // Setup visibility animations
   useEffect(() => {
-    if (!containerRef.current || !videoRef.current) return;
+    if (!containerRef.current) return;
 
     const shouldShow = !isReady || isLocked || hasStartedCountdown;
-    const videoOpacity = isLocked ? 0.8 : hasStartedCountdown ? 0.2 : 0.5;
 
     gsap.to(containerRef.current, {
       autoAlpha: shouldShow ? 1 : 0,
-      duration: 0.8,
-      ease: "expo.inOut",
-    });
-
-    gsap.to(videoRef.current, {
-      opacity: videoOpacity,
       duration: 0.8,
       ease: "expo.inOut",
     });
@@ -188,18 +161,6 @@ export const Preloader = ({
         backgroundColor: "rgba(0, 0, 0, 0)",
       }}
     >
-      {/* Background Video */}
-      <div className="absolute inset-0 z-0 opacity-5">
-        {/* <video
-          ref={videoRef}
-          className="h-full w-full object-cover opacity-5 mix-blend-color-burn"
-          muted
-          loop
-          playsInline
-          src="/video/clips/1.mp4"
-        /> */}
-      </div>
-
       {/* Content Overlay */}
       <div
         ref={contentRef}

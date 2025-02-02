@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+import React, { useEffect, useRef } from "react";
 
 gsap.registerPlugin(ScrambleTextPlugin);
 
@@ -20,16 +20,8 @@ interface SwipeBlocksProps {
 }
 
 export const SwipeBlocks = ({
-  height,
-  width,
   delay = 0,
   children,
-  onAnimationComplete,
-  inDuration = 0.5,
-  outDuration = 0.5,
-  holdDuration = 0.2,
-  ease = "power4.inOut",
-  outEase = "power4.out",
   from = "right",
   to = "right",
 }: SwipeBlocksProps) => {

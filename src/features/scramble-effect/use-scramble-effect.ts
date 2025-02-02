@@ -55,7 +55,7 @@ export const useScrambleEffect = (options: ScrambleOptions = {}) => {
         element.innerHTML = originalText;
         // Add a subtle transition
         gsap.to(element, {
-          scale: 1.02,
+          scale: 1.0,
           duration: 0.3,
           ease: "power2.out",
         });
