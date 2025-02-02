@@ -1,12 +1,21 @@
 import { useEffect, useRef } from "react";
-import YouTube, { YouTubeEvent } from "react-youtube";
 import { ScrambleText } from "../scramble-effect/scramble-text";
 import gsap from "gsap";
-import { GUNDAM_VIDEO_ID } from "../../routes";
+
+// Generate video URLs for all clips
+const generateVideoUrls = () => {
+  const urls: string[] = [];
+  for (let i = 1; i <= 20; i++) {
+    urls.push(`/video/clips/${i}.mp4`); // Simple root absolute path
+  }
+  return urls;
+};
+
+const videoUrls = generateVideoUrls();
 
 type GridCell = {
   id: string;
-  startTime: number;
+  videoIndex: number;
   row: number;
   col: number;
 };
@@ -14,11 +23,6 @@ type GridCell = {
 type MousePosition = {
   x: number;
   y: number;
-};
-
-type PlayerInstance = {
-  id: string;
-  player: YouTubeEvent["target"];
 };
 
 type VideoGridProps = {
@@ -29,24 +33,27 @@ type VideoGridProps = {
   }[];
 };
 
+// Function to get shuffled video indices
+const getShuffledVideoIndices = (count: number) => {
+  const indices = Array.from({ length: videoUrls.length }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices.slice(0, count);
+};
+
 const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const playerInstancesRef = useRef<PlayerInstance[]>([]);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const intervalRef = useRef<number | null>(null);
   const animationsRef = useRef<gsap.core.Tween[]>([]);
 
-  // YouTube player options
-  const opts = {
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      mute: 1,
-      loop: 1,
-      playlist: GUNDAM_VIDEO_ID,
-      start: 58,
-    },
-  };
+  // Generate random unique video indices for each cell
+  const videoIndices = useRef<number[]>(
+    getShuffledVideoIndices(gridData.length),
+  );
 
   // Clean up function for animations
   const cleanupAnimations = () => {
@@ -92,26 +99,6 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     );
   };
 
-  // Clean up function for YouTube players
-  const cleanupPlayers = () => {
-    playerInstancesRef.current.forEach(({ player }) => {
-      try {
-        player.destroy();
-      } catch (error) {
-        console.error("Error destroying player:", error);
-      }
-    });
-    playerInstancesRef.current = [];
-  };
-
-  // Handle YouTube player ready
-  const handlePlayerReady = (event: YouTubeEvent, index: number) => {
-    playerInstancesRef.current[index] = {
-      id: `youtube-player-${index}`,
-      player: event.target,
-    };
-  };
-
   // Mouse move effect
   useEffect(() => {
     let rafId: number | null = null;
@@ -146,14 +133,13 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           );
           const isNear = distance < maxDistance * 0.1;
 
-          const iframeId = `youtube-player-${index}`;
-          const iframe = document.getElementById(iframeId);
+          const video = videoRefs.current[index];
           const labelId = `pilot-label-${index}`;
           const label = document.getElementById(labelId);
 
-          if (iframe) {
+          if (video) {
             const glowBg = cellRef.querySelector(".video-glow-bg");
-            createAndStoreAnimation(iframe, {
+            createAndStoreAnimation(video, {
               scale: isNear ? 1.2 : 1,
               opacity: isNear ? 1 : 0,
               filter: isNear
@@ -198,16 +184,25 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   useEffect(() => {
     cellRefs.current.forEach((cellRef, index) => {
       if (!cellRef) return;
-      const iframe = document.getElementById(`youtube-player-${index}`);
+      const video = videoRefs.current[index];
       const label = document.getElementById(`pilot-label-${index}`);
-      if (iframe) {
-        gsap.set(iframe, {
+      if (video) {
+        // Set video source imperatively
+        video.src = videoUrls[videoIndices.current[index]];
+        gsap.set(video, {
           opacity: 0,
           filter: "grayscale(100%) brightness(50%)",
         });
       }
       if (label) {
         gsap.set(label, { opacity: 0, y: 20 });
+      }
+    });
+
+    // Start all videos
+    videoRefs.current.forEach((video) => {
+      if (video) {
+        video.play().catch(console.error);
       }
     });
 
@@ -223,12 +218,12 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     intervalRef.current = window.setInterval(() => {
       const cellRef = cellRefs.current[currentIndex];
       if (cellRef) {
-        const iframeElement = cellRef.querySelector("iframe");
+        const video = videoRefs.current[currentIndex];
         const glowBgElement = cellRef.querySelector(".video-glow-bg");
         const labelElement = cellRef.querySelector(`[id^="pilot-label-"]`);
 
-        if (iframeElement) {
-          createAndStoreAnimation(iframeElement, {
+        if (video) {
+          createAndStoreAnimation(video, {
             scale: 1.2,
             opacity: 1,
             filter: "grayscale(0%) brightness(100%)",
@@ -257,8 +252,8 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
         }
 
         const timeoutId = setTimeout(() => {
-          if (iframeElement) {
-            createAndStoreAnimation(iframeElement, {
+          if (video) {
+            createAndStoreAnimation(video, {
               scale: 1,
               opacity: 0,
               filter: "grayscale(100%) brightness(50%)",
@@ -302,11 +297,21 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
   // Cleanup on unmount
   useEffect(() => {
+    // Capture current refs at the time the effect runs
+    const videos = videoRefs.current;
+    const interval = intervalRef.current;
+
     return () => {
-      cleanupPlayers();
+      videos.forEach((video) => {
+        if (video) {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        }
+      });
       cleanupAnimations();
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
+      if (interval !== null) {
+        clearInterval(interval);
       }
     };
   }, []);
@@ -337,19 +342,13 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             }}
           />
           <div className="video-wrapper relative aspect-video h-full w-full overflow-hidden">
-            <YouTube
-              videoId={GUNDAM_VIDEO_ID}
-              opts={{
-                ...opts,
-                playerVars: {
-                  ...opts.playerVars,
-                  start: cell.startTime,
-                },
-              }}
-              className="pointer-events-none absolute inset-0"
-              iframeClassName={`absolute inset-0 h-full w-full origin-center transition-all duration-300`}
-              id={`youtube-player-${index}`}
-              onReady={(e: YouTubeEvent) => handlePlayerReady(e, index)}
+            <video
+              ref={(el) => (videoRefs.current[index] = el)}
+              className="absolute inset-0 h-full w-full origin-center object-cover transition-all duration-300"
+              muted
+              loop
+              // playsInline
+              autoPlay
             />
           </div>
           {/* Solution Label */}

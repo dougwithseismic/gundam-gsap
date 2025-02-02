@@ -4,7 +4,6 @@ import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import YouTube from "react-youtube";
 import { GundamTagline } from "../features/animations/ws/gundam-tagline";
 import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
 import { ScrambleText } from "../features/scramble-effect/scramble-text";
@@ -30,7 +29,7 @@ export const GUNDAM_VIDEO_ID = "8-qzOpE3dyM";
 // Add this type for our grid cell data
 type GridCell = {
   id: string;
-  startTime: number;
+  videoIndex: number;
   row: number;
   col: number;
 };
@@ -122,7 +121,7 @@ const Index = () => {
       for (let col = 0; col < 4; col++) {
         cells.push({
           id: `cell-${row}-${col}`,
-          startTime: Math.floor(Math.random() * 50) + 10,
+          videoIndex: row * 4 + col + 1,
           row,
           col,
         });
@@ -134,16 +133,14 @@ const Index = () => {
   // First, add a new ref for the text overlay
   const sectionFiveTextRef = useRef<HTMLDivElement>(null);
 
-  const opts = {
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      mute: 1,
-      loop: 1,
-      playlist: GUNDAM_VIDEO_ID,
-      start: 58,
-    },
-  };
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.src = "/video/clips/full.mp4";
+      videoRef.current.play().catch(console.error);
+    }
+  }, []);
 
   useEffect(() => {
     // Create smooth scroller
@@ -463,12 +460,14 @@ const Index = () => {
           transition={{ duration: 2, delay: 1 }}
           className="pointer-events-none absolute inset-0 z-10 min-h-svh min-w-svw"
         >
-          <YouTube
-            videoId={GUNDAM_VIDEO_ID}
-            opts={opts}
+          <video
+            ref={videoRef}
+            className="pointer-events-none z-10 min-h-svh min-w-svw scale-[1.2] opacity-100"
+            muted
+            loop
+            playsInline
+            autoPlay
             onPlay={() => setIsVideoReady(true)}
-            className="pointer-events-none"
-            iframeClassName="pointer-events-none z-10 min-h-svh min-w-svw scale-[1.2] opacity-100"
           />
         </motion.div>
       </div>
