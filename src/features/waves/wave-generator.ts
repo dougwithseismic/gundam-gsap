@@ -116,3 +116,71 @@ export const createWaveTimeline = ({
 
   return timeline;
 };
+
+interface WaveOptions {
+  target: gsap.TweenTarget;
+  min?: number;
+  max?: number;
+  duration?: number;
+  delay?: number;
+  ease?: string;
+}
+
+export class WaveGenerator {
+  private contextRef: gsap.Context | null = null;
+  private timeline: gsap.core.Timeline | null = null;
+
+  constructor() {
+    this.contextRef = gsap.context(() => {});
+  }
+
+  private generateRandomValue(min: number, max: number): number {
+    const rawValue = gsap.utils.random(min, max);
+    return Math.round(rawValue * 100) / 100;
+  }
+
+  public animate({
+    target,
+    min = -10,
+    max = 10,
+    duration = 1,
+    delay = 0,
+    ease = "none",
+  }: WaveOptions) {
+    if (!this.contextRef) return;
+
+    this.contextRef.add(() => {
+      this.timeline = gsap.timeline({
+        repeat: -1,
+        yoyo: true,
+      });
+
+      this.timeline
+        .to(target, {
+          y: this.generateRandomValue(min, max),
+          duration,
+          delay,
+          ease,
+        })
+        .to(target, {
+          y: this.generateRandomValue(min, max),
+          duration,
+          ease,
+        })
+        .to(target, {
+          y: this.generateRandomValue(min, max),
+          duration,
+          ease,
+        });
+    });
+  }
+
+  public cleanup() {
+    if (this.timeline) {
+      this.timeline.kill();
+    }
+    if (this.contextRef) {
+      this.contextRef.revert();
+    }
+  }
+}

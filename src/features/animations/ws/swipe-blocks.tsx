@@ -30,109 +30,80 @@ export const SwipeBlocks = ({
   holdDuration = 0.2,
   ease = "power4.inOut",
   outEase = "power4.out",
-  from = "left",
+  from = "right",
   to = "right",
 }: SwipeBlocksProps) => {
   const blockRef = useRef<HTMLDivElement>(null);
   const darkBlockRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const contextRef = useRef<gsap.Context | null>(null);
 
   useEffect(() => {
     if (!blockRef.current || !darkBlockRef.current || !contentRef.current)
       return;
 
-    const tl = gsap.timeline({
-      onComplete: onAnimationComplete,
-    });
+    // Create GSAP context for automatic cleanup
+    contextRef.current = gsap.context(() => {
+      gsap.set(contentRef.current, { opacity: 0 });
+      gsap.set([blockRef.current, darkBlockRef.current], {
+        scaleX: 0,
+        transformOrigin: from === "left" ? "left center" : "right center",
+      });
 
-    // Set initial states
-    gsap.set(contentRef.current, { opacity: 0 });
-    gsap.set([blockRef.current, darkBlockRef.current], {
-      scaleX: 0,
-      scaleY: 1,
-      transformOrigin: from,
-    });
-
-    // Animate blocks and content
-    tl.to(blockRef.current, {
-      scaleX: 1,
-      duration: inDuration,
-      ease,
-      delay,
-    })
-      .to(
-        darkBlockRef.current,
-        {
-          scaleX: 1,
-          duration: inDuration,
-          ease,
-          delay: 0.1,
+      const tl = gsap.timeline({
+        delay,
+        onComplete: () => {
+          if (contentRef.current) {
+            contentRef.current.style.transform = "none";
+          }
         },
-        `<`,
-      )
-      .to(
-        contentRef.current,
-        {
+      });
+
+      tl.to([blockRef.current, darkBlockRef.current], {
+        scaleX: 1,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: "power2.inOut",
+      })
+        .to(contentRef.current, {
           opacity: 1,
-          duration: 0,
-        },
-        "<80%",
-      )
-      .to(
-        darkBlockRef.current,
-        {
+          duration: 0.1,
+        })
+        .to([darkBlockRef.current, blockRef.current], {
           scaleX: 0,
-          duration: outDuration,
-          ease: outEase,
-          transformOrigin: to,
-        },
-        `+=${holdDuration}`,
-      )
-      .to(
-        blockRef.current,
-        {
-          scaleX: 0,
-          duration: outDuration,
-          ease: outEase,
-          delay: 0.1,
-          transformOrigin: to,
-        },
-        `<`,
-      );
+          duration: 0.5,
+          stagger: 0.1,
+          transformOrigin: to === "left" ? "left center" : "right center",
+          ease: "power2.inOut",
+        });
+    });
 
     return () => {
-      tl.kill();
+      // Kill all animations and clean up context
+      if (contextRef.current) {
+        contextRef.current.revert();
+      }
     };
-  }, [
-    delay,
-    onAnimationComplete,
-    inDuration,
-    outDuration,
-    holdDuration,
-    ease,
-    outEase,
-    from,
-    to,
-  ]);
+  }, [from, to, delay]);
 
   return (
     <div className="relative">
-      <div ref={contentRef}>{children}</div>
+      <div
+        ref={contentRef}
+        className="relative z-10 inline-block"
+        style={{ opacity: 0 }}
+      >
+        {children}
+      </div>
       <div
         ref={blockRef}
-        className="absolute top-0 left-0 bg-gradient-to-r from-primary-600 to-primary-600"
-        style={{
-          height: height || "100%",
-          width: width || "100%",
-        }}
+        className="absolute inset-0 z-20 bg-primary-400"
+        style={{ transformOrigin: "right center", transform: "scaleX(0)" }}
       />
       <div
         ref={darkBlockRef}
-        className="absolute top-0 left-0 animate-pulse bg-gradient-to-r from-primary-800 to-primary-800"
-        style={{
-          height: height || "100%",
-          width: width || "100%",
-        }}
+        className="absolute inset-0 z-30 bg-primary-950"
+        style={{ transformOrigin: "right center", transform: "scaleX(0)" }}
       />
     </div>
   );

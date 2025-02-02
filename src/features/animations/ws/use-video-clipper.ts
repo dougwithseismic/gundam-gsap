@@ -1,97 +1,68 @@
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useLayoutEffect, useRef } from "react";
 
 gsap.registerPlugin(SplitText, ScrollTrigger);
 
-interface VideoClipperOptions {
-  containerRef: React.RefObject<HTMLDivElement>;
-  titleSelector?: string;
-  isVideoReady?: boolean;
-}
-
-export const useVideoClipper = ({
-  isVideoReady = false,
-  containerRef,
-  titleSelector = ".sidequest-title",
-}: VideoClipperOptions) => {
+export const useVideoClipper = (text: string) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const splitTextRef = useRef<SplitText | null>(null);
+  const contextRef = useRef<gsap.Context | null>(null);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!containerRef.current) return;
 
-    const tl = gsap.timeline({
-      paused: !isVideoReady,
-    });
+    // Create GSAP context for automatic cleanup
+    contextRef.current = gsap.context(() => {
+      // Split text
+      splitTextRef.current = new SplitText(containerRef.current!, {
+        type: "lines",
+      });
 
-    splitTextRef.current = new SplitText(titleSelector, {
-      types: "lines",
-    });
-
-    // SET INITIALS
-    gsap.set(containerRef.current, {
-      yPercent: "100%",
-      width: "0%",
-      height: "0%",
-    });
-
-    gsap.set(splitTextRef.current.lines, {
-      opacity: 0,
-      yPercent: 100,
-    });
-
-    // ANIMATE
-    tl.to(containerRef.current, {
-      yPercent: "0%",
-      duration: 1.2,
-      width: "95%",
-      height: "30%",
-      ease: "expo.inOut",
-    })
-      // ANIMATE TEXT TITLES IN
-      .to(
-        splitTextRef.current.lines,
-        {
-          opacity: 1,
-          stagger: 0.1,
-          yPercent: 0,
+      // Create timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top center",
+          end: "bottom center",
+          scrub: true,
         },
-        "<",
-      )
-      .to(
-        containerRef.current,
-        {
-          duration: 1,
-          width: "30%",
-          height: "90%",
-          ease: "expo.inOut",
-        },
-        "<60%",
-      )
-      .to(containerRef.current, {
+      });
+
+      // Set initial states
+      gsap.set(containerRef.current, {
+        perspective: 400,
+      });
+
+      gsap.set(splitTextRef.current.lines, {
+        transformStyle: "preserve-3d",
+        transformOrigin: "center center -150",
+        opacity: 0,
+        rotationX: -90,
+      });
+
+      // Add animations to timeline
+      tl.to(splitTextRef.current.lines, {
         duration: 1,
-        width: "100%",
-        height: "100%",
-        ease: "expo.inOut",
         opacity: 1,
-      })
-      .to(
-        containerRef.current,
-        {
-          duration: 1,
-          width: "100%",
-          height: "100%",
-          ease: "expo.inOut",
-          opacity: 1,
-          transformOrigin: "center center",
-        },
-        "<",
-      );
+        rotationX: 0,
+        stagger: 0.1,
+        ease: "power2.out",
+      });
+    }, containerRef);
 
     return () => {
-      tl.kill();
-      splitTextRef.current?.revert();
+      if (contextRef.current) {
+        contextRef.current.revert();
+      }
+      if (splitTextRef.current) {
+        splitTextRef.current.revert();
+      }
     };
-  }, [containerRef, titleSelector, isVideoReady]);
+  }, [text]);
+
+  return {
+    containerRef,
+  };
 };

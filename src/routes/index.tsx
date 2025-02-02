@@ -15,12 +15,12 @@ import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { GundamTagline } from "../features/animations/ws/gundam-tagline";
 import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
 import { Preloader } from "../features/preloader/preloader";
 import { ScrambleText } from "../features/scramble-effect/scramble-text";
-import VideoGrid from "../features/video-grid/video-grid";
+const VideoGrid = lazy(() => import("../features/video-grid/video-grid"));
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
@@ -87,9 +87,6 @@ const SEISMIC_DATA = [
   },
 ] as const;
 
-// Lazy load the VideoGrid component
-// const VideoGrid = lazy(() => import("../features/video-grid/video-grid"));
-
 const Index = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -155,7 +152,19 @@ const Index = () => {
       width: "0%",
       height: "60%",
       transformOrigin: "center left",
+      willChange: "transform, opacity, filter",
     });
+
+    // Add willChange hints to text elements for smoother animations
+    gsap.set(
+      [
+        sectionTwoTextRef.current,
+        sectionThreeTextRef.current,
+        sectionFourTextRef.current,
+        sectionFiveTextRef.current,
+      ],
+      { willChange: "transform, opacity, filter" },
+    );
 
     if (!isVideoReady) {
       return () => {
@@ -163,250 +172,257 @@ const Index = () => {
       };
     }
 
-    // Immediate animations chained in timeline
-    const immediateTimeline = gsap.timeline();
-    immediateTimeline
-      .to(videoContainerRef.current, {
-        delay: 0.5,
-        width: "30%",
-        height: "100%",
-        duration: 0.7,
-        ease: "expo.inOut",
-      })
-      .to(videoContainerRef.current, {
-        filter: "grayscale(0%)",
-        width: "100%",
-        duration: 0.7,
-        ease: "expo.inOut",
+    const ctx = gsap.context(() => {
+      // Immediate animations chained in timeline
+      const immediateTimeline = gsap.timeline();
+      immediateTimeline
+        .to(videoContainerRef.current, {
+          delay: 0.5,
+          width: "30%",
+          height: "100%",
+          duration: 0.7,
+          ease: "expo.inOut",
+        })
+        .to(videoContainerRef.current, {
+          filter: "grayscale(0%)",
+          width: "100%",
+          duration: 0.7,
+          ease: "expo.inOut",
+        });
+
+      // Timeline for scroll effects on video container
+      const indexTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#index",
+          start: "top top",
+          end: "bottom 40%",
+          scrub: true,
+        },
       });
 
-    // Timeline for scroll effects on video container
-    const indexTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: "#index",
-        start: "top top",
-        end: "bottom 40%",
-        scrub: true,
-      },
-    });
+      indexTimeline.to("#pilot-card", {
+        opacity: 0,
+        duration: 1,
+        ease: "power2.inOut",
+      });
 
-    indexTimeline.to("#pilot-card", {
-      opacity: 0,
-      duration: 1,
-      ease: "power2.inOut",
-    });
+      // SECTION ONE
+      const sectionOneTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionOneRef.current,
+          start: "top top",
+          end: "bottom 20%",
+          scrub: true,
+        },
+      });
 
-    // SECTION ONE
-    const sectionOneTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionOneRef.current,
-        start: "top top",
-        end: "bottom 20%",
-        scrub: true,
-      },
-    });
-
-    sectionOneTimeline.to(videoContainerRef.current, {
-      width: "80%",
-      height: "60%",
-      xPercent: -50,
-      yPercent: -50,
-      left: "50%",
-      top: "50%",
-      scale: 1,
-    });
-
-    // SECTION TWO (video animations already exist)
-    const sectionTwoTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionTwoRef.current,
-        start: "top top",
-        end: "bottom 20%",
-        scrub: true,
-      },
-    });
-
-    sectionTwoTimeline
-      .to(videoContainerRef.current, {
-        width: "40%",
-        height: "30%",
+      sectionOneTimeline.to(videoContainerRef.current, {
+        width: "80%",
+        height: "60%",
         xPercent: -50,
         yPercent: -50,
         left: "50%",
         top: "50%",
-        duration: 1,
-        filter: "grayscale(100%)",
-        ease: "power2.inOut",
-        transformOrigin: "center center",
-        opacity: 0.2,
-      })
-      .to(
-        "#background-video",
-        {
+        scale: 1,
+      });
+
+      // SECTION TWO (video animations already exist)
+      const sectionTwoTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionTwoRef.current,
+          start: "top top",
+          end: "bottom 20%",
+          scrub: true,
+        },
+      });
+
+      sectionTwoTimeline
+        .to(videoContainerRef.current, {
+          width: "40%",
+          height: "30%",
+          xPercent: -50,
+          yPercent: -50,
+          left: "50%",
+          top: "50%",
+          duration: 1,
+          filter: "grayscale(100%)",
+          ease: "power2.inOut",
+          transformOrigin: "center center",
+          opacity: 0.2,
+        })
+        .to(
+          "#background-video",
+          {
+            width: "100%",
+            height: "100%",
+            scale: 1,
+          },
+          "<",
+        );
+
+      // New text animation for SECTION TWO
+      const sectionTwoTextTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionTwoRef.current,
+          start: "top center",
+          end: "bottom center",
+          scrub: true,
+        },
+      });
+      sectionTwoTextTimeline.fromTo(
+        sectionTwoTextRef.current,
+        { scale: 0.8, filter: "grayscale(100%)" },
+        { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
+      );
+
+      // SECTION THREE (video animations) - fixed timeline
+      const sectionThreeTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionThreeRef.current,
+          start: "top top",
+          end: "bottom 20%",
+          scrub: true,
+        },
+      });
+      sectionThreeTimeline
+        .to(videoContainerRef.current, {
+          width: "95%",
+          height: "95%",
+          filter: "grayscale(0%)",
+          opacity: 1,
+          scale: 1,
+          duration: 0.5,
+        })
+        .to(videoContainerRef.current, {
           width: "100%",
           height: "100%",
           scale: 1,
+          duration: 0.5,
+        });
+
+      // New text animation for SECTION THREE
+      const sectionThreeTextTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionThreeRef.current,
+          start: "top center",
+          end: "bottom center",
+          scrub: true,
         },
-        "<",
+      });
+      sectionThreeTextTimeline.fromTo(
+        sectionThreeTextRef.current,
+        { scale: 0.8, filter: "grayscale(100%)" },
+        { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
       );
 
-    // New text animation for SECTION TWO
-    const sectionTwoTextTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionTwoRef.current,
-        start: "top center",
-        end: "bottom center",
-        scrub: true,
-      },
-    });
-    sectionTwoTextTimeline.fromTo(
-      sectionTwoTextRef.current,
-      { scale: 0.8, filter: "grayscale(100%)" },
-      { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
-    );
+      // SECTION FOUR text animation
+      const sectionFourTextTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionFourRef.current,
+          start: "top center",
+          end: "bottom center",
+          scrub: true,
+        },
+      });
+      sectionFourTextTimeline.fromTo(
+        sectionFourTextRef.current,
+        { scale: 0.8, filter: "grayscale(100%)" },
+        { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
+      );
 
-    // SECTION THREE (video animations) - replaced dynamic onUpdate with fixed timeline
-    const sectionThreeTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionThreeRef.current,
-        start: "top top",
-        end: "bottom 20%",
-        scrub: true,
-      },
-    });
-    sectionThreeTimeline
-      .to(videoContainerRef.current, {
-        width: "95%",
-        height: "95%",
-        filter: "grayscale(0%)",
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-      })
-      .to(videoContainerRef.current, {
-        width: "100%",
-        height: "100%",
-        scale: 1,
-        duration: 0.5,
+      // --- SECTION FIVE: Video Grid with Parallax ---
+      const sectionFiveTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionFiveRef.current,
+          start: "top 80%",
+          end: "bottom top",
+          scrub: 1,
+        },
       });
 
-    // New text animation for SECTION THREE
-    const sectionThreeTextTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionThreeRef.current,
-        start: "top center",
-        end: "bottom center",
-        scrub: true,
-      },
-    });
-    sectionThreeTextTimeline.fromTo(
-      sectionThreeTextRef.current,
-      { scale: 0.8, filter: "grayscale(100%)" },
-      { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
-    );
+      sectionFiveTimeline
+        .to(
+          videoContainerRef.current,
+          {
+            filter: "grayscale(100%) blur(8px)",
+            opacity: 0.3,
+            ease: "power2.inOut",
+          },
+          0,
+        )
+        .fromTo(
+          sectionFiveTextRef.current,
+          {
+            opacity: 0,
+            y: 100,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: "power2.inOut",
+          },
+          ">-0.5",
+        )
+        .to(
+          sectionFiveTextRef.current,
+          {
+            opacity: 0,
+            y: -100,
+            duration: 1,
+            ease: "power2.inOut",
+          },
+          ">2",
+        )
+        .to(".video-grid-wrapper", {
+          opacity: 0,
+          duration: 1,
+          ease: "power2.inOut",
+        });
 
-    // SECTION FOUR text animation
-    const sectionFourTextTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionFourRef.current,
-        start: "top center",
-        end: "bottom center",
-        scrub: true,
-      },
-    });
-    sectionFourTextTimeline.fromTo(
-      sectionFourTextRef.current,
-      { scale: 0.8, filter: "grayscale(100%)" },
-      { scale: 1.2, filter: "grayscale(0%)", ease: "power2.inOut" },
-    );
+      // --- SECTION SIX: Main video animation ---
+      const sectionSixTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionSixRef.current,
+          start: "top 80%",
+          end: "center center",
+          scrub: 1,
+        },
+      });
 
-    // --- SECTION FIVE: Video Grid with Parallax ---
-    const sectionFiveTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionFiveRef.current,
-        start: "top 80%",
-        end: "bottom top",
-        scrub: 1,
-      },
-    });
-
-    sectionFiveTimeline
-      .to(
+      sectionSixTimeline.to(
         videoContainerRef.current,
         {
-          filter: "grayscale(100%) blur(8px)",
-          opacity: 0.3,
-          ease: "power2.inOut",
-        },
-        0,
-      )
-      .fromTo(
-        sectionFiveTextRef.current,
-        {
-          opacity: 0,
-          y: 100,
-        },
-        {
+          filter: "grayscale(0%) blur(0px)",
           opacity: 1,
-          y: 0,
+          scale: 1.2,
           duration: 1,
           ease: "power2.inOut",
         },
-        ">-0.5",
-      )
-      .to(
-        sectionFiveTextRef.current,
-        {
-          opacity: 0,
-          y: -100,
-          duration: 1,
-          ease: "power2.inOut",
-        },
-        ">2",
+        "<0.3",
       );
 
-    // --- SECTION SIX: Main video animation ---
-    const sectionSixTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionSixRef.current,
-        start: "top 80%",
-        end: "center center",
-        scrub: 1,
-      },
-    });
+      const sectionSevenTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionSevenRef.current,
+          start: "top 80%",
+          end: "center center",
+          scrub: true,
+        },
+      });
 
-    sectionSixTimeline.to(
-      videoContainerRef.current,
-      {
-        filter: "grayscale(0%) blur(0px)",
-        opacity: 1,
-        scale: 1.2,
-        duration: 1,
+      sectionSevenTimeline.to(videoContainerRef.current, {
+        filter: "grayscale(100%) blur(8px)",
+        opacity: 0.3,
+        scale: 0.6,
         ease: "power2.inOut",
-      },
-      "<0.3",
-    );
-
-    const sectionSevenTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionSevenRef.current,
-        start: "top 80%",
-        end: "center center",
-        scrub: true,
-      },
-    });
-
-    sectionSevenTimeline.to(videoContainerRef.current, {
-      filter: "grayscale(100%) blur(8px)",
-      opacity: 0.3,
-      scale: 0.6,
-      ease: "power2.inOut",
+      });
     });
 
     return () => {
+      ctx.revert();
       smoother.kill();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      gsap.globalTimeline.clear();
     };
   }, [isVideoReady]);
 
@@ -575,7 +591,7 @@ const Index = () => {
           {/* SECTION FIVE - Video Grid Layout */}
           <div
             ref={sectionFiveRef}
-            className="relative flex h-screen items-center justify-center bg-black"
+            className="relative flex items-center justify-center bg-black"
           >
             {/* Text Overlay */}
             <div
@@ -583,7 +599,6 @@ const Index = () => {
               className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white"
             >
               <div className="flex flex-col items-center gap-8">
-                <SwipeBlocks></SwipeBlocks>
                 <SwipeBlocks delay={0.2}>
                   <p className="mx-auto max-w-xs text-center font-mono text-sm sm:max-w-xl">
                     ACCESSING OPTIMIZATION PROTOCOLS... LOADING FORCE
@@ -594,8 +609,10 @@ const Index = () => {
             </div>
 
             {/* Lazy loaded Video Grid */}
-            <div className="absolute inset-0">
-              <VideoGrid gridData={gridData} seismicData={SEISMIC_DATA} />
+            <div className="video-grid-wrapper">
+              <Suspense fallback={null}>
+                <VideoGrid gridData={gridData} seismicData={SEISMIC_DATA} />
+              </Suspense>
             </div>
           </div>
 

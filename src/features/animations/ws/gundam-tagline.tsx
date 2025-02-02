@@ -3,74 +3,57 @@ import { SplitText } from "gsap/SplitText";
 import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 import { useEffect, useRef } from "react";
 import { ScrambleText } from "../../scramble-effect/scramble-text";
-import { createWaveTimeline } from "../../waves/wave-generator";
 import { SwipeBlocks } from "./swipe-blocks";
 
 // Register plugins outside component
 gsap.registerPlugin(SplitText, ScrambleTextPlugin);
 
-export const GundamTagline = ({
-  title = "CORNER CUTTERS",
-  subtitle = "IMPOSSIBLY DOPE",
-}: {
+interface GundamTaglineProps {
   title?: string;
   subtitle?: string;
-}) => {
+}
+
+export const GundamTagline = ({
+  title = "SEISMIC",
+  subtitle = "UNFAIR ADVANTAGE",
+}: GundamTaglineProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const terminalRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
-  const noiseRef = useRef<gsap.core.Timeline | null>(null);
-  const splitTextRef = useRef<SplitText | null>(null);
-
-  // Noise wave generator effect
-  useEffect(() => {
-    if (!terminalRef.current) return;
-
-    // Create noise timeline using our new utility
-    noiseRef.current = createWaveTimeline({
-      target: terminalRef.current,
-      type: "noise",
-      options: {
-        min: 0.2,
-        max: 1,
-        steps: 20,
-      },
-    });
-
-    return () => {
-      if (noiseRef.current) {
-        noiseRef.current.kill();
-      }
-    };
-  }, []);
+  const contextRef = useRef<gsap.Context | null>(null);
 
   useEffect(() => {
     if (!textRef.current) return;
 
-    splitTextRef.current = new SplitText(textRef.current, {
-      type: "lines,words",
-      linesClass: "lines-js",
-      lineThreshold: 0.5,
-      wordDelimiter: " ",
-    });
+    // Create GSAP context for automatic cleanup
+    contextRef.current = gsap.context(() => {
+      // Initial state
+      gsap.set("#seismic-tagline-title", { opacity: 0, y: 20 });
+      gsap.set("#seismic-tagline-subtitle", { opacity: 0, y: 10 });
 
-    gsap.from("#seismic-tagline-title", {
-      duration: 0.7,
-      delay: 0.6,
-      ease: "power1.inOut",
-      scrambleText: {
-        text: title,
-      },
-    });
+      // Animate title and subtitle containers
+      const tl = gsap.timeline();
+      tl.to("#seismic-tagline-title", {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        ease: "power2.out",
+      }).to(
+        "#seismic-tagline-subtitle",
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        },
+        "-=0.6",
+      );
+    }, containerRef);
 
-    gsap.from("#seismic-tagline-subtitle", {
-      duration: 0.7,
-      delay: 0.6,
-      ease: "power1.inOut",
-      scrambleText: {
-        text: subtitle,
-      },
-    });
+    return () => {
+      if (contextRef.current) {
+        contextRef.current.revert();
+      }
+    };
   }, [title, subtitle]);
 
   return (
@@ -83,7 +66,9 @@ export const GundamTagline = ({
               className="flex h-fit flex-col overflow-hidden leading-none tracking-tighter text-text-muted [&_.lines-js]:!inline-block"
             >
               <SwipeBlocks delay={0.1} from="left" to="left">
-                <div id="seismic-tagline-title">{title}</div>
+                <div id="seismic-tagline-title" className="text-xs">
+                  {title}
+                </div>
               </SwipeBlocks>
               <SwipeBlocks delay={0.15}>
                 <div
@@ -116,7 +101,6 @@ export const GundamTagline = ({
             </div>
           </div>
         </div>
-        <div ref={terminalRef} className="col-span-4"></div>
       </div>
     </div>
   );
