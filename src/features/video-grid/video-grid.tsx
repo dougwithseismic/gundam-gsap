@@ -221,7 +221,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
         const video = videoRefs.current[index];
         const label = document.getElementById(`pilot-label-${index}`);
         if (video) {
-          video.src = videoUrls[videoIndices.current[index]];
+          // Set preload attribute and event listener. Video src will be set later with a staggered delay.
           video.preload = "auto"; // Add preload
 
           // Add smooth loop handling
@@ -241,11 +241,15 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
         }
       });
 
-      // Start all videos
-      videoRefs.current.forEach((video) => {
-        if (video) {
-          video.play().catch(console.error);
-        }
+      // Stagger video loading: load each video with a delay based on its index
+      const staggerDelay = 0.3; // seconds delay between each video's load
+      videoRefs.current.forEach((video, index) => {
+        gsap.delayedCall(index * staggerDelay, () => {
+          if (video) {
+            video.src = videoUrls[videoIndices.current[index]];
+            video.play().catch(console.error);
+          }
+        });
       });
     });
 

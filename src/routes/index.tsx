@@ -132,10 +132,19 @@ const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.src = "/video/clips/full.mp4";
-      videoRef.current.play().catch(console.error);
+    const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement.src = "/video/clips/full.mp4";
+      videoElement.play().catch(console.error);
     }
+
+    return () => {
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.removeAttribute("src");
+        videoElement.load();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -423,6 +432,10 @@ const Index = () => {
       ctx.revert();
       smoother.kill();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      // Clear any remaining GSAP animations
+      gsap.globalTimeline.clear();
+      // Force reset the scroll position
+      window.scrollTo(0, 0);
     };
   }, [isVideoReady]);
 

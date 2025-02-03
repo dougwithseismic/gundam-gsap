@@ -49,8 +49,8 @@ const Marquee: React.FC<MarqueeProps> = ({
     // On scroll, temporarily increase the speed
     const handleScroll = () => {
       if (animationRef.current) {
-        // Increase speed by 3x
-        animationRef.current.timeScale(3);
+        // Increase speed by 2x
+        animationRef.current.timeScale(2);
 
         if (scrollTimeoutRef.current) {
           clearTimeout(scrollTimeoutRef.current);
