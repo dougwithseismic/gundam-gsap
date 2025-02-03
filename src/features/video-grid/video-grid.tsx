@@ -25,11 +25,6 @@ type GridCell = {
   col: number;
 };
 
-type MousePosition = {
-  x: number;
-  y: number;
-};
-
 type VideoGridProps = {
   gridData: GridCell[];
   seismicData: readonly {
@@ -78,11 +73,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     getShuffledVideoIndices(gridData.length),
   );
 
-  const {
-    trackInterval,
-    trackListener,
-    cleanup: cleanupAnimations,
-  } = useAnimationCleanup();
+  const { trackInterval, cleanup: cleanupAnimations } = useAnimationCleanup();
 
   // Cache grid and cell rects
   useLayoutEffect(() => {
@@ -121,22 +112,32 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     ) => {
       const currentState = cellStates.current[index];
 
-      // Allow updates if:
-      // 1. State is changing (active/inactive)
-      // 2. Source is changing (hover taking precedence over random)
-      // 3. Forcing inactive state (isNear is false)
+      // Only prevent updates if the cell is already active with the same source
+      // This allows hover to take over from random, and random to activate non-hovered cells
       if (
-        currentState.isActive === isNear &&
+        currentState.isActive &&
         currentState.triggerSource === source &&
         isNear === true
       )
         return;
 
-      // Update state
-      cellStates.current[index] = {
-        isActive: isNear,
-        triggerSource: isNear ? source : null,
-      };
+      // If cell is already active from hover, don't let random override it
+      if (
+        currentState.isActive &&
+        currentState.triggerSource === "hover" &&
+        source === "random"
+      )
+        return;
+
+      // Update state - preserve random timer if hover is taking over
+      const preserveTimeout =
+        currentState.triggerSource === "random" && source === "hover";
+      if (!preserveTimeout) {
+        cellStates.current[index] = {
+          isActive: isNear,
+          triggerSource: isNear ? source : null,
+        };
+      }
 
       // Create a timeline for this cell's animation that cleans itself up
       const tl = gsap.timeline({
@@ -189,8 +190,8 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
         );
       }
 
-      // If this was triggered randomly, schedule its return to normal state
-      if (!isNear) return;
+      // Only handle timeouts for random triggers
+      if (!isNear || source !== "random") return;
 
       // Clear any existing timeout for this index
       const existingTimeout = activeTimeoutsRef.current.get(index);
@@ -200,7 +201,10 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
       // Set timeout to revert the cell's state after TRIGGER_DURATION
       const timeoutId = setTimeout(() => {
-        triggerCell(index, false, cellRef, video, label, duration, source);
+        // Only revert if not currently being hovered
+        if (cellStates.current[index].triggerSource !== "hover") {
+          triggerCell(index, false, cellRef, video, label, duration, source);
+        }
         activeTimeoutsRef.current.delete(index);
       }, TRIGGER_DURATION);
 
@@ -257,57 +261,6 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
       });
     };
   }, []);
-
-  // Update mouse move effect to use new trigger source
-  useEffect(() => {
-    let rafId: number | null = null;
-    let lastMousePos = { x: 0, y: 0 };
-    const MOUSE_MOVE_THRESHOLD = 5;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!gridRectRef.current || rafId !== null) return;
-
-      const dx = e.clientX - lastMousePos.x;
-      const dy = e.clientY - lastMousePos.y;
-      const hasMovedEnough =
-        Math.sqrt(dx * dx + dy * dy) >= MOUSE_MOVE_THRESHOLD;
-
-      if (!hasMovedEnough) return;
-
-      const newMousePos = { x: e.clientX, y: e.clientY };
-      lastMousePos = newMousePos;
-
-      rafId = requestAnimationFrame(() => {
-        cellRefs.current.forEach((cellRef, index) => {
-          if (!cellRef || !cellRectsRef.current[index]) return;
-
-          const cellRect = cellRectsRef.current[index]!;
-          const distance = calculateDistance(cellRect, newMousePos);
-          const maxDistance = Math.sqrt(
-            gridRectRef.current!.width ** 2 + gridRectRef.current!.height ** 2,
-          );
-          const isNear = distance < maxDistance * 0.1;
-
-          const video = videoRefs.current[index];
-          const labelId = `pilot-label-${index}`;
-          const label = document.getElementById(labelId);
-
-          // Pass 'hover' as source
-          triggerCell(index, isNear, cellRef, video, label, 800, "hover");
-        });
-        rafId = null;
-      });
-    };
-
-    trackListener(window, "mousemove", handleMouseMove as EventListener);
-
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      cleanupAnimations();
-    };
-  }, [triggerCell, trackListener, cleanupAnimations]);
 
   // Update random trigger effect to use new source
   useEffect(() => {
@@ -410,16 +363,6 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     };
   }, []);
 
-  // Calculate distance from mouse to cell center
-  const calculateDistance = (cellRect: DOMRect, mousePos: MousePosition) => {
-    const cellCenterX = cellRect.left + cellRect.width / 2;
-    const cellCenterY = cellRect.top + cellRect.height / 2;
-    return Math.sqrt(
-      Math.pow(mousePos.x - cellCenterX, 2) +
-        Math.pow(mousePos.y - cellCenterY, 2),
-    );
-  };
-
   // Add cursor animation effect
   useEffect(() => {
     if (!cursorRef.current || !gridRef.current) return;
@@ -498,6 +441,36 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             willChange: "transform",
             cursor: "none",
             pointerEvents: "auto",
+          }}
+          onMouseEnter={() => {
+            const video = videoRefs.current[index];
+            const label = document.getElementById(`pilot-label-${index}`);
+            if (cellRefs.current[index]) {
+              triggerCell(
+                index,
+                true,
+                cellRefs.current[index]!,
+                video,
+                label,
+                800,
+                "hover",
+              );
+            }
+          }}
+          onMouseLeave={() => {
+            const video = videoRefs.current[index];
+            const label = document.getElementById(`pilot-label-${index}`);
+            if (cellRefs.current[index]) {
+              triggerCell(
+                index,
+                false,
+                cellRefs.current[index]!,
+                video,
+                label,
+                800,
+                "hover",
+              );
+            }
           }}
         >
           {/* Glow Background */}
