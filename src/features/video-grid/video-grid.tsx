@@ -62,6 +62,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const cursorRef = useRef<HTMLDivElement>(null);
   // Update cell states to track trigger source
   const cellStates = useRef<CellState[]>(
     Array(gridData.length).fill({ isActive: false, triggerSource: null }),
@@ -419,11 +420,74 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     );
   };
 
+  // Add cursor animation effect
+  useEffect(() => {
+    if (!cursorRef.current || !gridRef.current) return;
+
+    const cursor = cursorRef.current;
+    const grid = gridRef.current;
+    let cursorAnimation: gsap.core.Tween;
+
+    const onMouseEnter = () => {
+      gsap.to(cursor, {
+        opacity: 1,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+    };
+
+    const onMouseLeave = () => {
+      gsap.to(cursor, {
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = grid.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (cursorAnimation) {
+        cursorAnimation.kill();
+      }
+
+      cursorAnimation = gsap.to(cursor, {
+        x: x,
+        y: y,
+        duration: 0.15,
+        ease: "power2.out",
+      });
+    };
+
+    grid.addEventListener("mouseenter", onMouseEnter);
+    grid.addEventListener("mouseleave", onMouseLeave);
+    grid.addEventListener("mousemove", onMouseMove);
+
+    return () => {
+      grid.removeEventListener("mouseenter", onMouseEnter);
+      grid.removeEventListener("mouseleave", onMouseLeave);
+      grid.removeEventListener("mousemove", onMouseMove);
+      if (cursorAnimation) cursorAnimation.kill();
+    };
+  }, []);
+
   return (
     <div
       ref={gridRef}
-      className="relative grid w-full origin-center grid-cols-6"
+      className="relative z-10 grid w-full origin-center grid-cols-6"
+      style={{ cursor: "none" }}
     >
+      {/* Custom Cursor */}
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed z-[100] h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-700/80 opacity-0 mix-blend-difference"
+        style={{
+          willChange: "transform",
+          pointerEvents: "none",
+        }}
+      />
       {gridData.map((cell, index) => (
         <div
           key={cell.id}
@@ -432,21 +496,23 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           style={{
             transformOrigin: "center center",
             willChange: "transform",
+            cursor: "none",
+            pointerEvents: "auto",
           }}
         >
           {/* Glow Background */}
           <div
-            className="video-glow-bg absolute inset-0 opacity-0"
+            className="video-glow-bg pointer-events-none absolute inset-0 opacity-0"
             style={{
               background:
                 "radial-gradient(circle, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 70%, rgba(147,51,234,0) 100%)",
               transform: "translateZ(-1px)",
             }}
           />
-          <div className="relative h-full w-full">
+          <div className="pointer-events-none relative h-full w-full">
             <video
               ref={(el) => (videoRefs.current[index] = el)}
-              className="h-full w-full object-cover"
+              className="pointer-events-none h-full w-full object-cover"
               muted
               loop
               playsInline
@@ -458,11 +524,11 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             id={`pilot-label-${index}`}
             className="pointer-events-none absolute bottom-4 left-4 flex flex-col opacity-0"
           >
-            <div className="flex flex-col gap-1">
-              <span className="font-mono text-xs text-white">
+            <div className="pointer-events-none flex flex-col gap-1">
+              <span className="pointer-events-none font-mono text-xs text-white">
                 {seismicData[index]?.title || "INNOVATION"}
               </span>
-              <span className="font-mono text-sm font-bold text-white">
+              <span className="pointer-events-none font-mono text-sm font-bold text-white">
                 {seismicData[index]?.description || "Digital Solutions"}
               </span>
             </div>

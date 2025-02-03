@@ -143,7 +143,7 @@ const Index = () => {
     const smoother = ScrollSmoother.create({
       wrapper: smoothWrapperRef.current,
       content: smoothContentRef.current,
-      smooth: 1.5,
+      smooth: 1.05,
       effects: true,
     });
 
