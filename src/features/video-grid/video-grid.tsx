@@ -48,15 +48,24 @@ const getShuffledVideoIndices = (count: number) => {
   return indices.slice(0, count);
 };
 
-const RANDOM_TRIGGER_INTERVAL = 3000; // Time between random triggers (3 seconds)
-const TRIGGER_DURATION = 2000; // How long an item stays triggered (2 seconds)
+const RANDOM_TRIGGER_INTERVAL = 2000; // Time between random triggers (3 seconds)
+const TRIGGER_DURATION = 3000; // How long an item stays triggered (2 seconds)
 const MIN_OPACITY = 0.05; // Minimum opacity for inactive elements
+
+// Update the type to track trigger source
+type CellState = {
+  isActive: boolean;
+  triggerSource: "hover" | "random" | null;
+};
 
 const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const cellActiveStates = useRef<boolean[]>([]);
+  // Update cell states to track trigger source
+  const cellStates = useRef<CellState[]>(
+    Array(gridData.length).fill({ isActive: false, triggerSource: null }),
+  );
   const gridRectRef = useRef<DOMRect | null>(null);
   const cellRectsRef = useRef<(DOMRect | null)[]>([]);
   const activeTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(
@@ -98,7 +107,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     };
   }, []);
 
-  // Modified triggerCell function that uses self-cleaning timelines
+  // Modified triggerCell function that handles trigger sources
   const triggerCell = useCallback(
     (
       index: number,
@@ -107,15 +116,31 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
       video: HTMLVideoElement | null,
       label: HTMLElement | null,
       duration: number = 800,
+      source: "hover" | "random" = "hover",
     ) => {
-      // If already in the desired state, skip
-      if (cellActiveStates.current[index] === isNear) return;
-      cellActiveStates.current[index] = isNear;
+      const currentState = cellStates.current[index];
+
+      // Allow updates if:
+      // 1. State is changing (active/inactive)
+      // 2. Source is changing (hover taking precedence over random)
+      // 3. Forcing inactive state (isNear is false)
+      if (
+        currentState.isActive === isNear &&
+        currentState.triggerSource === source &&
+        isNear === true
+      )
+        return;
+
+      // Update state
+      cellStates.current[index] = {
+        isActive: isNear,
+        triggerSource: isNear ? source : null,
+      };
 
       // Create a timeline for this cell's animation that cleans itself up
       const tl = gsap.timeline({
         onComplete: () => {
-          tl.kill(); // Kill timeline once done to free up memory
+          tl.kill();
         },
       });
 
@@ -174,7 +199,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
       // Set timeout to revert the cell's state after TRIGGER_DURATION
       const timeoutId = setTimeout(() => {
-        triggerCell(index, false, cellRef, video, label, duration);
+        triggerCell(index, false, cellRef, video, label, duration, source);
         activeTimeoutsRef.current.delete(index);
       }, TRIGGER_DURATION);
 
@@ -183,7 +208,56 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     [],
   );
 
-  // Mouse move effect
+  // Update video initialization
+  useLayoutEffect(() => {
+    gsap.context(() => {
+      cellRefs.current.forEach((cellRef, index) => {
+        if (!cellRef) return;
+        const video = videoRefs.current[index];
+        const label = document.getElementById(`pilot-label-${index}`);
+        if (video) {
+          video.src = videoUrls[videoIndices.current[index]];
+          video.preload = "auto"; // Add preload
+
+          // Add smooth loop handling
+          video.addEventListener("ended", () => {
+            video.currentTime = 0;
+            video.play().catch(console.error);
+          });
+
+          gsap.set(video, {
+            opacity: MIN_OPACITY,
+            filter: "grayscale(100%) brightness(50%)",
+            mixBlendMode: "multiply",
+          });
+        }
+        if (label) {
+          gsap.set(label, { opacity: MIN_OPACITY, y: 20 });
+        }
+      });
+
+      // Start all videos
+      videoRefs.current.forEach((video) => {
+        if (video) {
+          video.play().catch(console.error);
+        }
+      });
+    });
+
+    // Capture current videos for cleanup
+    const currentVideos = videoRefs.current;
+
+    // Cleanup video event listeners
+    return () => {
+      currentVideos.forEach((video) => {
+        if (video) {
+          video.removeEventListener("ended", () => {});
+        }
+      });
+    };
+  }, []);
+
+  // Update mouse move effect to use new trigger source
   useEffect(() => {
     let rafId: number | null = null;
     let lastMousePos = { x: 0, y: 0 };
@@ -217,7 +291,8 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           const labelId = `pilot-label-${index}`;
           const label = document.getElementById(labelId);
 
-          triggerCell(index, isNear, cellRef, video, label);
+          // Pass 'hover' as source
+          triggerCell(index, isNear, cellRef, video, label, 800, "hover");
         });
         rafId = null;
       });
@@ -233,30 +308,40 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     };
   }, [triggerCell, trackListener, cleanupAnimations]);
 
-  // Random trigger effect
+  // Update random trigger effect to use new source
   useEffect(() => {
     const timeoutsRef = activeTimeoutsRef.current;
 
     const triggerRandomCell = () => {
-      // Get indices of cells that aren't currently active
-      const inactiveIndices = cellRefs.current
+      // Get indices of cells that aren't currently active or are only random-triggered
+      const availableIndices = cellRefs.current
         .map((_, index) => index)
         .filter(
           (index) =>
-            !cellActiveStates.current[index] && !timeoutsRef.has(index),
+            !cellStates.current[index].isActive ||
+            (cellStates.current[index].triggerSource === "random" &&
+              !timeoutsRef.has(index)),
         );
 
-      if (inactiveIndices.length === 0) return;
+      if (availableIndices.length === 0) return;
 
-      // Select one random cell
       const randomIndex =
-        inactiveIndices[Math.floor(Math.random() * inactiveIndices.length)];
+        availableIndices[Math.floor(Math.random() * availableIndices.length)];
       const cellRef = cellRefs.current[randomIndex];
       const video = videoRefs.current[randomIndex];
       const label = document.getElementById(`pilot-label-${randomIndex}`);
 
       if (cellRef) {
-        triggerCell(randomIndex, true, cellRef, video, label, TRIGGER_DURATION);
+        // Pass 'random' as source
+        triggerCell(
+          randomIndex,
+          true,
+          cellRef,
+          video,
+          label,
+          TRIGGER_DURATION,
+          "random",
+        );
       }
     };
 
@@ -270,35 +355,6 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
       cleanupAnimations();
     };
   }, [triggerCell, trackInterval, cleanupAnimations]);
-
-  // Initial cell setup
-  useLayoutEffect(() => {
-    gsap.context(() => {
-      cellRefs.current.forEach((cellRef, index) => {
-        if (!cellRef) return;
-        const video = videoRefs.current[index];
-        const label = document.getElementById(`pilot-label-${index}`);
-        if (video) {
-          video.src = videoUrls[videoIndices.current[index]];
-          gsap.set(video, {
-            opacity: MIN_OPACITY,
-            filter: "grayscale(100%) brightness(50%)",
-            mixBlendMode: "multiply",
-          });
-        }
-        if (label) {
-          gsap.set(label, { opacity: MIN_OPACITY, y: 20 });
-        }
-      });
-
-      // Start all videos
-      videoRefs.current.forEach((video) => {
-        if (video) {
-          video.play().catch(console.error);
-        }
-      });
-    });
-  }, []);
 
   // Grid stagger fade in animation with quick grey border effect when cells come into view
   useLayoutEffect(() => {
@@ -317,7 +373,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
       },
     });
     tl.to(cells, {
-      opacity: 1,
+      opacity: 0.3,
       stagger: 0.05,
       duration: 0.25,
       ease: "power1.out",
@@ -328,6 +384,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           background: "radial-gradient(circle, rebeccapurple, black)",
           mixBlendMode: "screen",
           stagger: 0.05,
+          opacity: 0.5,
           duration: 0.1,
           ease: "power1.out",
         },
@@ -337,6 +394,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
         background: "radial-gradient(circle, black, black)",
         mixBlendMode: "normal",
         stagger: 0.05,
+        opacity: 1,
         duration: 0.1,
         ease: "power1.out",
       })

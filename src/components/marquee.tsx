@@ -75,7 +75,7 @@ const Marquee: React.FC<MarqueeProps> = ({
   }, [direction, speed]);
 
   return (
-    <div className="marquee-outer overflow-hidden">
+    <div className="marquee-outer overflow-hidden py-1 select-none">
       <div ref={marqueeContainer} style={{ display: "flex" }}>
         <div className="marquee-content whitespace-nowrap">{children}</div>
       </div>

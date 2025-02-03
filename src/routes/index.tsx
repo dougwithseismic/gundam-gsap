@@ -71,7 +71,7 @@ const SEISMIC_DATA = [
   },
   {
     title: "DATA DRIVEN",
-    description: "Numbers Never Lie",
+    description: "Numbers Never Lie, Humans Do",
   },
   {
     title: "PERPETUAL BETA",
@@ -538,18 +538,6 @@ const Index = () => {
               <br />
               WANT TO WIN.
             </h2>
-            <div className="mx-auto my-8 grid grid-cols-3 gap-8 sm:grid-cols-5">
-              <Anthropic.Avatar size={48} />
-              <OpenAI.Avatar size={48} />
-              <DeepSeek.Avatar size={48} />
-              <Cursor.Avatar size={48} />
-              <HuggingFace.Avatar size={48} />
-              <Perplexity.Avatar size={48} />
-              <Aws.Avatar size={48} />
-              <Github.Avatar size={48} />
-              <Vercel.Avatar size={48} />
-              <XAI.Avatar size={48} />
-            </div>
           </div>
 
           {/* SECTION THREE */}
@@ -599,7 +587,7 @@ const Index = () => {
           {/* SECTION SIX */}
           <div
             ref={sectionSixRef}
-            className="relative flex h-screen items-center justify-center"
+            className="relative flex h-screen flex-col items-center justify-center gap-8"
           >
             <h2 className="z-50 mx-auto max-w-md text-center text-3xl text-white sm:text-4xl md:text-6xl">
               FULLSTACK AI ASSISTED DEVELOPMENT
@@ -608,6 +596,18 @@ const Index = () => {
                 FROM THE HACKERS IN THE BASEMENT
               </span>
             </h2>
+            <div className="mx-auto my-8 grid grid-cols-3 gap-8 sm:grid-cols-5">
+              <Anthropic.Avatar size={48} />
+              <OpenAI.Avatar size={48} />
+              <DeepSeek.Avatar size={48} />
+              <Cursor.Avatar size={48} />
+              <HuggingFace.Avatar size={48} />
+              <Perplexity.Avatar size={48} />
+              <Aws.Avatar size={48} />
+              <Github.Avatar size={48} />
+              <Vercel.Avatar size={48} />
+              <XAI.Avatar size={48} />
+            </div>
           </div>
 
           {/* SECTION SEVEN */}

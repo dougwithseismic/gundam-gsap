@@ -88,7 +88,7 @@ const CameraFeed: React.FC<SectionFiveProps> = ({
     <div
       ref={sectionRef}
       className="relative flex items-center justify-center bg-black"
-      data-speed="0.6"
+      data-speed="0.9"
     >
       {/* Text Overlay */}
       <div
