@@ -1,8 +1,11 @@
 import gsap from "gsap";
-import { useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import ScrollTrigger from "gsap/ScrollTrigger";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useAnimationCleanup } from "../animations/hooks/use-animation-cleanup";
-import { ScrambleText } from "../scramble-effect/scramble-text";
 import { debounce } from "../utils/debounce";
+
+// Register ScrollTrigger plugin
+gsap.registerPlugin(ScrollTrigger);
 
 // Generate video URLs for all clips
 const generateVideoUrls = () => {
@@ -232,14 +235,15 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
 
   // Random trigger effect
   useEffect(() => {
+    const timeoutsRef = activeTimeoutsRef.current;
+
     const triggerRandomCell = () => {
       // Get indices of cells that aren't currently active
       const inactiveIndices = cellRefs.current
         .map((_, index) => index)
         .filter(
           (index) =>
-            !cellActiveStates.current[index] &&
-            !activeTimeoutsRef.current.has(index),
+            !cellActiveStates.current[index] && !timeoutsRef.has(index),
         );
 
       if (inactiveIndices.length === 0) return;
@@ -260,11 +264,9 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     trackInterval(setInterval(triggerRandomCell, RANDOM_TRIGGER_INTERVAL));
 
     return () => {
-      // Capture the current timeouts at the time of cleanup
-      const currentTimeouts = new Map(activeTimeoutsRef.current);
-      // Clear all active timeouts on cleanup
-      currentTimeouts.forEach((timeout) => clearTimeout(timeout));
-      currentTimeouts.clear();
+      // Clear all active timeouts on cleanup using the captured ref
+      timeoutsRef.forEach((timeout) => clearTimeout(timeout));
+      timeoutsRef.clear();
       cleanupAnimations();
     };
   }, [triggerCell, trackInterval, cleanupAnimations]);
@@ -281,6 +283,7 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
           gsap.set(video, {
             opacity: MIN_OPACITY,
             filter: "grayscale(100%) brightness(50%)",
+            mixBlendMode: "multiply",
           });
         }
         if (label) {
@@ -297,6 +300,57 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
     });
   }, []);
 
+  // Grid stagger fade in animation with quick grey border effect when cells come into view
+  useLayoutEffect(() => {
+    const cells = cellRefs.current.filter((cell) => cell) as HTMLElement[];
+    if (!cells.length) return;
+    // Set initial style for fade-in and border animation
+    gsap.set(cells, {
+      opacity: 0,
+      background: "radial-gradient(circle, black, black)",
+    });
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: gridRef.current,
+        start: "top 80%",
+        once: true,
+      },
+    });
+    tl.to(cells, {
+      opacity: 1,
+      stagger: 0.05,
+      duration: 0.25,
+      ease: "power1.out",
+    })
+      .to(
+        cells,
+        {
+          background: "radial-gradient(circle, rebeccapurple, black)",
+          mixBlendMode: "screen",
+          stagger: 0.05,
+          duration: 0.1,
+          ease: "power1.out",
+        },
+        "+=0.05",
+      )
+      .to(cells, {
+        background: "radial-gradient(circle, black, black)",
+        mixBlendMode: "normal",
+        stagger: 0.05,
+        duration: 0.1,
+        ease: "power1.out",
+      })
+      .add(() => {
+        videoRefs.current.forEach((video) => {
+          if (video) video.style.mixBlendMode = "inherit";
+        });
+      });
+    return () => {
+      if (tl.scrollTrigger) tl.scrollTrigger.kill();
+      tl.kill();
+    };
+  }, []);
+
   // Calculate distance from mouse to cell center
   const calculateDistance = (cellRect: DOMRect, mousePos: MousePosition) => {
     const cellCenterX = cellRect.left + cellRect.width / 2;
@@ -310,14 +364,13 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
   return (
     <div
       ref={gridRef}
-      className="relative grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4"
-      data-speed="0.8"
+      className="relative grid w-full origin-center grid-cols-6"
     >
       {gridData.map((cell, index) => (
         <div
           key={cell.id}
           ref={(el) => (cellRefs.current[index] = el)}
-          className="relative flex aspect-[16/9] transform-gpu items-center justify-center overflow-hidden"
+          className="relative flex aspect-video transform-gpu items-center justify-center overflow-hidden"
           style={{
             transformOrigin: "center center",
             willChange: "transform",
@@ -348,22 +401,12 @@ const VideoGrid = ({ gridData, seismicData }: VideoGridProps) => {
             className="pointer-events-none absolute bottom-4 left-4 flex flex-col opacity-0"
           >
             <div className="flex flex-col gap-1">
-              <ScrambleText
-                text={seismicData[index]?.title || "INNOVATION"}
-                className="font-mono text-xs text-white"
-                continuous={true}
-                scrambleOptions={{
-                  maxScrambleCount: 1,
-                }}
-              />
-              <ScrambleText
-                text={seismicData[index]?.description || "Digital Solutions"}
-                className="font-mono text-sm font-bold text-white"
-                continuous={true}
-                scrambleOptions={{
-                  maxScrambleCount: 1,
-                }}
-              />
+              <span className="font-mono text-xs text-white">
+                {seismicData[index]?.title || "INNOVATION"}
+              </span>
+              <span className="font-mono text-sm font-bold text-white">
+                {seismicData[index]?.description || "Digital Solutions"}
+              </span>
             </div>
           </div>
         </div>

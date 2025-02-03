@@ -15,12 +15,12 @@ import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GundamTagline } from "../features/animations/ws/gundam-tagline";
 import { SwipeBlocks } from "../features/animations/ws/swipe-blocks";
 import { Preloader } from "../features/preloader/preloader";
 import { ScrambleText } from "../features/scramble-effect/scramble-text";
-const VideoGrid = lazy(() => import("../features/video-grid/video-grid"));
+import { CameraFeed } from "../components/camera-feed";
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
@@ -85,7 +85,7 @@ const SEISMIC_DATA = [
     title: "TRUE INFLUENCE",
     description: "Authentic Innovation",
   },
-] as const;
+];
 
 const Index = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -589,32 +589,12 @@ const Index = () => {
           </div>
 
           {/* SECTION FIVE - Video Grid Layout */}
-          <div
-            ref={sectionFiveRef}
-            className="relative flex items-center justify-center bg-black"
-          >
-            {/* Text Overlay */}
-            <div
-              ref={sectionFiveTextRef}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white"
-            >
-              <div className="flex flex-col items-center gap-8">
-                <SwipeBlocks delay={0.2}>
-                  <p className="mx-auto max-w-xs text-center font-mono text-sm sm:max-w-xl">
-                    ACCESSING OPTIMIZATION PROTOCOLS... LOADING FORCE
-                    MULTIPLIERS
-                  </p>
-                </SwipeBlocks>
-              </div>
-            </div>
-
-            {/* Lazy loaded Video Grid */}
-            <div className="video-grid-wrapper">
-              <Suspense fallback={null}>
-                <VideoGrid gridData={gridData} seismicData={SEISMIC_DATA} />
-              </Suspense>
-            </div>
-          </div>
+          <CameraFeed
+            sectionRef={sectionFiveRef}
+            sectionTextRef={sectionFiveTextRef}
+            gridData={gridData}
+            seismicData={SEISMIC_DATA}
+          />
 
           {/* SECTION SIX */}
           <div
